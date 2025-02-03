@@ -1,6 +1,6 @@
 package main
 
-import "github.com/arjungandhi/atp/pkg" atp
+import atp "github.com/arjungandhi/atp/pkg"
 
 func main() {
 	atp.Cmd.Run()
