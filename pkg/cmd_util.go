@@ -3,6 +3,8 @@ package atp
 import (
 	"errors"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -48,4 +50,82 @@ func userInProject(projects []*Project) (*Project, error) {
 	}
 
 	return nil, nil
+}
+
+// -------------------------------- Task Utils --------------------------------
+// get the user set task_directory defaults to ~/.tasks
+func getTaskDir() (string, error) {
+	task_dir := os.Getenv("TASK_DIR")
+	if task_dir == "" {
+		task_dir = "~/.tasks"
+	}
+
+	task_dir, err := filepath.Abs(task_dir)
+	if err != nil {
+		return "", err
+	}
+
+	// make the dir if it does not exist
+	err = os.MkdirAll(task_dir, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+
+	return task_dir, nil
+}
+
+// get all tasks
+func getAllTasks() ([]*Task, error) {
+	// get our taskdir
+	task_dir, err := getTaskDir()
+	if err != nil {
+		return nil, err
+	}
+	// there are two files in our task_dir we care about
+	// todo.txt, done.txt
+	all_tasks := []*Task{}
+	file_paths := []string{"todo.txt", "done.txt"}
+
+	for _, file_path := range file_paths {
+		file_tasks, err := LoadTaskFile(filepath.Join(task_dir, file_path))
+		if err != nil {
+			return nil, err
+		}
+		all_tasks = append(all_tasks, file_tasks...)
+	}
+
+	return all_tasks, nil
+}
+
+// write all tasks back to the files
+func writeAllTasks(tasks []*Task) error {
+	// get our taskdir
+	task_dir, err := getTaskDir()
+	if err != nil {
+		return err
+	}
+
+	// sort tasks into complete and incomplete
+	done := []*Task{}
+	not_done := []*Task{}
+
+	for _, task := range tasks {
+		if task.Done {
+			done = append(done, task)
+		} else {
+			not_done = append(not_done, task)
+		}
+	}
+
+	err = WriteTaskFile(filepath.Join(task_dir, "done.txt"), done)
+	if err != nil {
+		return nil
+	}
+
+	err = WriteTaskFile(filepath.Join(task_dir, "not_done.txt"), done)
+	if err != nil {
+		return nil
+	}
+
+	return nil
 }
