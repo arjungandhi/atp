@@ -47,81 +47,57 @@ If this is successful 2025 we should do alot more stuff. If this system is usefu
 To measure this I need to keep track of projects some how. 
 
 
-## Project Tracking Tool
-
-Needs work revist after 
+## Project Tracking Design
 
 
-## Task Execution Tool 
+I can do the following actions with projects
 
-A task is just a thing I need to do. It can be anything related to projects or not. 
+1. Add a new project idea - create a new entry in projects.txt
+2. Make a project active - Prioritize the project in projects.txt, set its phase, if either select a repo or attach it to an existing repo (if needed), clone that repo locally (if needed)
+3. Edit a project doc - open the doc.txt in the project directory
+4. Deactivate a project - remove the repo from my computer + deprioritize the entry in projects.txt
+5. Finish a project - remove the repo from my computer + move the project entry from projects.txt -> finished_projects.txt
+7. Set the phase of a project - change the phase label in a project, covered by edit for now 
 
-Tasks have the following key info
+The project and finished_project files will follow the [todo.txt](https://github.com/1set/todotxt) format. Its simple and expandable and parseable by a simple text editor as well as has good connection with other tools  
 
-1. Name
-2. Due Date
-4. Expected Duration
-5. Actual Duration
-6. Actual Completion Date
-7. Dependencies List[Task] - Future
-8. Labels (key:values to extend the task with other systems)
+## Task Execution Tool
 
-### Existing Tools I researched
+Keeping this simple we will build off the excellent todotxt format. So to keep this simple we will write tools to extend the base todo.sh functionality rather than doing something custom.  
 
-1. Open Project
-2. Plane
-3. Click up 
-4. Github Issues Based
-5. Todoist 
-6. Task Warrior
-7. todo.txt
-
-### Task Tracking Design 
-
-1. list all tasks 
-2. start task
-3. stop a task 
-4. manual priority order
-5. project label
-
-
-we'll build this app off of the [todo.txt](https://github.com/1set/todotxt) format, its a simple text based format with lots of community support. It also makes things like future integration much easier.
-
-#### File format 
-
-https://github.com/todotxt/todo.txt
-
-
-### Access
-
-This tool needs both ios and computer access in the long term but maybe for now we just start off with laptop access 
-
+1. Add a new todo
+2. Finish a todo
+3. Delete a todo
+4. List todos by priority  
+5. List todos by project
+6. Sync todos with github issues
+7. Expire todo when they are past an expiry date
+8. Edit all non complete todos
+9. Edit all todos
 
 ### Phases
 
 #### Phase 1: Prototype / Scoping
 
-completed on:
-
 In phase 1 we'll develop the following as a prototype
 
 1. Bare bones task tracking tool
-2. Project List
-3. Template For Project Docs
-4. Updated Doc for ATP and Project Tracking
+3. Updated Doc for ATP and Project Tracking
 
 Success is all these tools exists and my projects are in that format
 
 #### Phase 2: Beta
 
-Iterate on Phase 1, make changes get to a point where we are happy for 2-3 weeks
+##### Project
 
-##### Beta Ideas
-1. Alarm once we pass estimated time 
-2. Hard Expiry on tasks 
-3. Github Issue Integration
-4. Automation to add tasks on a regular basis
-5. Journal? extract todos from journal into app
+1. Project Template 
+2. Project Cli 
+
+##### Task Tracking
+
+1. Sync with github issue s
+2. Expire old todos
+3. Easier ways to add, edit, view todos
 
 #### Phase 3: Gamma
 

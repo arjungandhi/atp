@@ -2,13 +2,36 @@ package atp
 
 import (
 	"errors"
+	"github.com/arjungandhi/atp/pkg/repo"
+	"github.com/arjungandhi/atp/pkg/todo"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 )
 
-// ------------------------------- Project Utils -------------------------------
+// general utils
+// get the user specified ATP directory
+func getAtpDir() (string, error) {
+	todo_dir := os.Getenv("ATP_DIR")
+	if todo_dir == "" {
+		todo_dir = "~/.atp"
+	}
+
+	todo_dir, err := filepath.Abs(todo_dir)
+	if err != nil {
+		return "", err
+	}
+
+	// make the dir if it does not exist
+	err = os.MkdirAll(todo_dir, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+
+	return todo_dir, nil
+}
+
+// ------------------------------- Repo Utils -------------------------------
 
 func getRepoDir() (string, error) {
 	repo_dir := os.Getenv("REPOS")
@@ -19,13 +42,13 @@ func getRepoDir() (string, error) {
 	return repo_dir, nil
 }
 
-func getRepoProjects() ([]*Project, error) {
+func getRepos() ([]*repo.Repo, error) {
 	repo_dir, err := getRepoDir()
 	if err != nil {
 		return nil, err
 	}
 
-	projects, err := GetProjects(repo_dir)
+	projects, err := repo.GetRepos(repo_dir)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +58,7 @@ func getRepoProjects() ([]*Project, error) {
 
 // checks if user is within list of projects P
 // if they are returns project else returs nil
-func userInProject(projects []*Project) (*Project, error) {
+func userInRepo(projects []*repo.Repo) (*repo.Repo, error) {
 	// get the current user dir
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -52,77 +75,56 @@ func userInProject(projects []*Project) (*Project, error) {
 	return nil, nil
 }
 
-// -------------------------------- Task Utils --------------------------------
-// get the user set task_directory defaults to ~/.tasks
-func getTaskDir() (string, error) {
-	task_dir := os.Getenv("TASK_DIR")
-	if task_dir == "" {
-		task_dir = "~/.tasks"
-	}
-
-	task_dir, err := filepath.Abs(task_dir)
-	if err != nil {
-		return "", err
-	}
-
-	// make the dir if it does not exist
-	err = os.MkdirAll(task_dir, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
-
-	return task_dir, nil
-}
-
-// get all tasks
-func getAllTasks() ([]*Task, error) {
-	// get our taskdir
-	task_dir, err := getTaskDir()
+// -------------------------------- Todo Utils --------------------------------
+// get all todos
+func getAllTodos() ([]*todo.Todo, error) {
+	// get our tododir
+	todo_dir, err := getAtpDir()
 	if err != nil {
 		return nil, err
 	}
-	// there are two files in our task_dir we care about
+	// there are two files in our todo_dir we care about
 	// todo.txt, done.txt
-	all_tasks := []*Task{}
+	all_todos := []*todo.Todo{}
 	file_paths := []string{"todo.txt", "done.txt"}
 
 	for _, file_path := range file_paths {
-		file_tasks, err := LoadTaskFile(filepath.Join(task_dir, file_path))
+		file_todos, err := todo.LoadTodoFile(filepath.Join(todo_dir, file_path))
 		if err != nil {
 			return nil, err
 		}
-		all_tasks = append(all_tasks, file_tasks...)
+		all_todos = append(all_todos, file_todos...)
 	}
 
-	return all_tasks, nil
+	return all_todos, nil
 }
 
-// write all tasks back to the files
-func writeAllTasks(tasks []*Task) error {
-	// get our taskdir
-	task_dir, err := getTaskDir()
+// write all todos back to the files
+func writeAllTodos(todos []*todo.Todo) error {
+	// get our tododir
+	todo_dir, err := getAtpDir()
 	if err != nil {
 		return err
 	}
 
-	// sort tasks into complete and incomplete
-	done := []*Task{}
-	not_done := []*Task{}
+	// sort todos into complete and incomplete
+	done := []*todo.Todo{}
+	not_done := []*todo.Todo{}
 
-	for _, task := range tasks {
-		if task.Done {
-			done = append(done, task)
+	for _, todo := range todos {
+		if todo.Done {
+			done = append(done, todo)
 		} else {
-			not_done = append(not_done, task)
+			not_done = append(not_done, todo)
 		}
 	}
 
-	err = WriteTaskFile(filepath.Join(task_dir, "done.txt"), done)
+	err = todo.WriteTodoFile(filepath.Join(todo_dir, "done.txt"), done)
 	if err != nil {
 		return nil
 	}
 
-	err = WriteTaskFile(filepath.Join(task_dir, "not_done.txt"), done)
+	err = todo.WriteTodoFile(filepath.Join(todo_dir, "not_done.txt"), done)
 	if err != nil {
 		return nil
 	}

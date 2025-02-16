@@ -1,6 +1,6 @@
 module github.com/arjungandhi/atp
 
-go 1.20
+go 1.23
 
 require (
 	github.com/arjungandhi/go-utils v0.5.0
