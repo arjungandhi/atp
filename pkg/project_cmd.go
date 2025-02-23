@@ -22,7 +22,17 @@ var projectEditCmd = &bonzai.Cmd{
 	Summary:  "edit the projects",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
-		// default only active optional all
+		//
+		return nil
+	},
+}
+
+var projectEditAllCmd = &bonzai.Cmd{
+	Name:     "all",
+	Aliases:  []string{"a"},
+	Summary:  "edit all projects",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		return nil
 	},
 }

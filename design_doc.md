@@ -57,7 +57,8 @@ I can do the following actions with projects
 3. Edit a project doc - open the doc.txt in the project directory
 4. Deactivate a project - remove the repo from my computer + deprioritize the entry in projects.txt
 5. Finish a project - remove the repo from my computer + move the project entry from projects.txt -> finished_projects.txt
-7. Set the phase of a project - change the phase label in a project, covered by edit for now 
+6. Delete a project idea - delete a entry in projects.txt
+7. Set the phase of a project - change the phase label in a project 
 
 The project and finished_project files will follow the [todo.txt](https://github.com/1set/todotxt) format. Its simple and expandable and parseable by a simple text editor as well as has good connection with other tools  
 
@@ -65,39 +66,29 @@ The project and finished_project files will follow the [todo.txt](https://github
 
 Keeping this simple we will build off the excellent todotxt format. So to keep this simple we will write tools to extend the base todo.sh functionality rather than doing something custom.  
 
-1. Add a new todo
-2. Finish a todo
-3. Delete a todo
-4. List todos by priority  
-5. List todos by project
-6. Sync todos with github issues
-7. Expire todo when they are past an expiry date
-8. Edit all non complete todos
-9. Edit all todos
+Heres some cool first pass ideas 
+
+1. Ingtegrate with github issues to sync issues with github
 
 ### Phases
 
 #### Phase 1: Prototype / Scoping
 
+completed on:
+
 In phase 1 we'll develop the following as a prototype
 
 1. Bare bones task tracking tool
-3. Updated Doc for ATP and Project Tracking
+2. Project List
+4. Updated Doc for ATP and Project Tracking
 
 Success is all these tools exists and my projects are in that format
 
 #### Phase 2: Beta
 
-##### Project
+Iterate on Phase 1, make changes get to a point where we are happy for 2-3 weeks
 
-1. Project Template 
-2. Project Cli 
-
-##### Task Tracking
-
-1. Sync with github issue s
-2. Expire old todos
-3. Easier ways to add, edit, view todos
+Some po
 
 #### Phase 3: Gamma
 
