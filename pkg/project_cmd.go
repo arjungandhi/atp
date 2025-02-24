@@ -22,6 +22,8 @@ var ProjectCmd = &bonzai.Cmd{
 		projectDeleteCmd,
 		projectFinishCmd,
 		projectReorgCmd,
+		projectActivateCmd,
+		projectDeactivateCmd,
 	},
 }
 
@@ -100,12 +102,6 @@ var projectAddCmd = &bonzai.Cmd{
 			return err
 		}
 
-		// get the projects path
-		path, err := getProjectPath()
-		if err != nil {
-			return err
-		}
-
 		projects, err := getProjects()
 		if err != nil {
 			return err
@@ -114,7 +110,7 @@ var projectAddCmd = &bonzai.Cmd{
 		projects = append(projects, new_project)
 
 		// write the projects to the file
-		err = WriteProject(path, projects)
+		err = WriteProjects(projects)
 		if err != nil {
 			return err
 		}
@@ -144,17 +140,11 @@ var projectDeleteCmd = &bonzai.Cmd{
 			return err
 		}
 
-		// get the projects path
-		path, err := getProjectPath()
-		if err != nil {
-			return err
-		}
-
 		// remove the project
 		projects = append(projects[:index], projects[index+1:]...)
 
 		// write the projects to the file
-		err = WriteProject(path, projects)
+		err = WriteProjects(projects)
 		if err != nil {
 			return err
 		}
@@ -168,6 +158,61 @@ var projectActivateCmd = &bonzai.Cmd{
 	Summary:  "activate a project",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		// get input from user
+		input := strings.Join(args, " ")
+
+		// load projects
+		projects, err := getProjects()
+		if err != nil {
+			return err
+		}
+
+		// get all inactive projects
+		inactive_projects := []*Project{}
+		for _, project := range projects {
+			if !project.Active {
+				inactive_projects = append(inactive_projects, project)
+			}
+		}
+
+		// get the project
+		index, err := shell.FzfSearch(inactive_projects, input)
+		if err != nil {
+			return err
+		}
+
+		selection := inactive_projects[index]
+		// mark the project as active
+		selection.Active = true
+		// set the phase to 1 if it is not set
+		if selection.Phase == "" {
+			selection.Phase = "1"
+		}
+
+		if selection.Repo == nil {
+
+			// load repos
+			repos, err := getRepos()
+			if err != nil {
+				return err
+			}
+
+			// have the user select the repo
+			repo_index, err := shell.FzfSearch(repos, "")
+			if err != nil {
+				return err
+			}
+
+			// set the repo
+			selection.Repo = repos[repo_index]
+		}
+
+		// write the projects to the file
+		err = WriteProjects(projects)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	},
 }
@@ -177,6 +222,34 @@ var projectDeactivateCmd = &bonzai.Cmd{
 	Summary:  "deactivate a project",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		// get input from user
+		input := strings.Join(args, " ")
+
+		// load projects
+		projects, err := getProjects()
+		if err != nil {
+			return err
+		}
+
+		// get all active projects
+		active_projects := []*Project{}
+		for _, project := range projects {
+			if project.Active {
+				active_projects = append(active_projects, project)
+			}
+		}
+
+		// get the project
+		index, err := shell.FzfSearch(active_projects, input)
+		if err != nil {
+			return err
+		}
+
+		// mark the project as inactive
+		active_projects[index].Active = false
+
+		err = WriteProjects(projects)
+
 		return nil
 	},
 }
@@ -195,15 +268,23 @@ var projectFinishCmd = &bonzai.Cmd{
 			return err
 		}
 
+		// get all not done projects
+		not_done_projects := []*Project{}
+		for _, project := range projects {
+			if !project.Done {
+				not_done_projects = append(not_done_projects, project)
+			}
+		}
+
 		// get the project
-		index, err := shell.FzfSearch(projects, input)
+		index, err := shell.FzfSearch(not_done_projects, input)
 		if err != nil {
 			return err
 		}
 
 		// mark the project as done
-		projects[index].Active = false
-		projects[index].Done = true
+		not_done_projects[index].Active = false
+		not_done_projects[index].Done = true
 
 		err = WriteAllProjects(projects)
 

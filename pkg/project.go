@@ -38,6 +38,8 @@ func (p *Project) ToTodo() *todo.Todo {
 
 	if p.Active {
 		t.Priority = "A"
+	} else {
+		t.Priority = ""
 	}
 
 	t.Done = p.Done
@@ -123,7 +125,7 @@ func LoadProjectFile(path string, repos []*repo.Repo) ([]*Project, error) {
 }
 
 // write projects to a file
-func WriteProject(path string, projects []*Project) error {
+func WriteProjectFile(path string, projects []*Project) error {
 	// convert all projects todos
 	todos := []*todo.Todo{}
 	for _, p := range projects {

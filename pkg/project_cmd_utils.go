@@ -148,6 +148,15 @@ func getActiveProjects() ([]*Project, error) {
 	return active_projects, nil
 }
 
+func WriteProjects(projects []*Project) error {
+	path, err := getProjectPath()
+	if err != nil {
+		return fmt.Errorf("Unable to write projects to file: %w", err)
+	}
+
+	return WriteProjectFile(path, projects)
+}
+
 // write all projects to the file
 func WriteAllProjects(projects []*Project) error {
 	path, err := getProjectPath()
@@ -172,13 +181,13 @@ func WriteAllProjects(projects []*Project) error {
 	}
 
 	// write the projects to the file
-	err = WriteProject(path, not_done_projects)
+	err = WriteProjectFile(path, not_done_projects)
 	if err != nil {
 		return fmt.Errorf("Unable to write projects to file: %w", err)
 	}
 
 	// write the done projects to the file
-	err = WriteProject(done_path, done_projects)
+	err = WriteProjectFile(done_path, done_projects)
 	if err != nil {
 		return fmt.Errorf("Unable to write projects to file: %w", err)
 	}

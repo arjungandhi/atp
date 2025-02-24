@@ -170,8 +170,20 @@ func LoadTodoFile(path string) ([]*Todo, error) {
 
 // Write a todo.txt file from a list of todos
 func WriteTodoFile(path string, todos []*Todo) error {
+	// if the file exists, back it up to a .bak file
+	if _, err := os.Stat(path); err == nil {
+		err := os.Rename(path, path+".bak")
+		if err != nil {
+			return err
+		}
+	}
+
 	file, err := os.Create(path)
 	if err != nil {
+		// if there was an error, restore the backup
+		if _, err := os.Stat(path + ".bak"); err == nil {
+			os.Rename(path+".bak", path)
+		}
 		return err
 	}
 	defer file.Close()

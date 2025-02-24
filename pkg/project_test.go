@@ -157,7 +157,7 @@ func TestLoadProjectFile(t *testing.T) {
 	}
 }
 
-func TestWriteProject(t *testing.T) {
+func TestWriteProjectFile(t *testing.T) {
 	// Prepare mock data
 	projects := []*Project{
 		{
@@ -182,7 +182,7 @@ func TestWriteProject(t *testing.T) {
 	// defer a deleteion
 	defer os.Remove(temp_file.Name())
 
-	err = WriteProject(temp_file.Name(), projects)
+	err = WriteProjectFile(temp_file.Name(), projects)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
