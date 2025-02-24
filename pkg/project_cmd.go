@@ -1,6 +1,7 @@
 package atp
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/arjungandhi/atp/pkg/todo"
@@ -115,6 +116,8 @@ var projectAddCmd = &bonzai.Cmd{
 			return err
 		}
 
+		fmt.Printf("Added project: %s\n", new_project.String())
+
 		return nil
 	},
 }
@@ -148,6 +151,8 @@ var projectDeleteCmd = &bonzai.Cmd{
 		if err != nil {
 			return err
 		}
+
+		fmt.Printf("Deleted project: %s\n", projects[index].String())
 
 		return nil
 	},
@@ -213,6 +218,8 @@ var projectActivateCmd = &bonzai.Cmd{
 			return err
 		}
 
+		fmt.Printf("Activated project: %s\n", selection.String())
+
 		return nil
 	},
 }
@@ -249,6 +256,8 @@ var projectDeactivateCmd = &bonzai.Cmd{
 		active_projects[index].Active = false
 
 		err = WriteProjects(projects)
+
+		fmt.Printf("Deactivated project: %s\n", active_projects[index].String())
 
 		return nil
 	},
@@ -287,6 +296,8 @@ var projectFinishCmd = &bonzai.Cmd{
 		not_done_projects[index].Done = true
 
 		err = WriteAllProjects(projects)
+
+		fmt.Printf("Finished project: %s\n", not_done_projects[index].String())
 
 		return nil
 
@@ -350,6 +361,8 @@ var projectReorgCmd = &bonzai.Cmd{
 		if err != nil {
 			return err
 		}
+
+		fmt.Println("Reorganized projects")
 
 		return nil
 	},
