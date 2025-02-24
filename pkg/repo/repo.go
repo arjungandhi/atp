@@ -30,7 +30,7 @@ func NewRepo(owner string, name string, dir string, url string) *Repo {
 
 // Gets the fullpath for the design doc of the repo.
 // by default this is the design_doc.md file for in the root of the repo.
-func (repo *Repo) getRepoDoc() string {
+func (repo *Repo) GetRepoDoc() string {
 	// TODO(arjun): future consider adding away to override this
 	doc_dir := filepath.Join(repo.Dir, "design_doc.md")
 	return doc_dir

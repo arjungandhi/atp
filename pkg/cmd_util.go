@@ -11,23 +11,23 @@ import (
 // general utils
 // get the user specified ATP directory
 func getAtpDir() (string, error) {
-	todo_dir := os.Getenv("ATP_DIR")
-	if todo_dir == "" {
-		todo_dir = "~/.atp"
+	atp_dir := os.Getenv("ATP_DIR")
+	if atp_dir == "" {
+		atp_dir = "~/.atp"
 	}
 
-	todo_dir, err := filepath.Abs(todo_dir)
+	atp_dir, err := filepath.Abs(atp_dir)
 	if err != nil {
 		return "", err
 	}
 
 	// make the dir if it does not exist
-	err = os.MkdirAll(todo_dir, os.ModePerm)
+	err = os.MkdirAll(atp_dir, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
 
-	return todo_dir, nil
+	return atp_dir, nil
 }
 
 // ------------------------------- Repo Utils -------------------------------

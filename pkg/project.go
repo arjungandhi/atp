@@ -2,6 +2,7 @@ package atp
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/arjungandhi/atp/pkg/repo"
@@ -88,6 +89,18 @@ func FromTodo(t *todo.Todo, repos []*repo.Repo) (*Project, error) {
 	return p, nil
 }
 
+// convert a project to a string
+func (p *Project) String() string {
+	// convert the project to a todo
+	return p.Name
+}
+
+// convert a project to a string with more details
+func (p *Project) TodoString() string {
+	// convert the project to a todo
+	return p.ToTodo().String()
+}
+
 // Load a file contianing projects
 func LoadProjectFile(path string, repos []*repo.Repo) ([]*Project, error) {
 	todos, err := todo.LoadTodoFile(path)
@@ -119,4 +132,20 @@ func WriteProject(path string, projects []*Project) error {
 
 	// write the file
 	return todo.WriteTodoFile(path, todos)
+}
+
+// sort a list of projects
+func SortProjects(projects []*Project) {
+	// sort the projects
+	slices.SortFunc(projects, func(a *Project, b *Project) int {
+		// sort by active, then by name
+		if a.Active && !b.Active {
+			return -1
+		}
+		if !a.Active && b.Active {
+			return 1
+		}
+
+		return strings.Compare(a.Name, b.Name)
+	})
 }

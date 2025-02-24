@@ -108,10 +108,6 @@ func TestFromTodo(t *testing.T) {
 	}
 }
 
-func getTempFile() {
-
-}
-
 func TestLoadProjectFile(t *testing.T) {
 	// Assuming there's a mock path to the file
 	temp_file, err := os.CreateTemp("", "test_project_*.txt")
