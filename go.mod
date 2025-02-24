@@ -2,10 +2,8 @@ module github.com/arjungandhi/atp
 
 go 1.23
 
-replace github.com/arjungandhi/go-utils => ../go-utils
-
 require (
-	github.com/arjungandhi/go-utils v0.7.0
+	github.com/arjungandhi/go-utils v0.8.0
 	github.com/rwxrob/bonzai v0.20.10
 	github.com/rwxrob/help v0.7.2
 )
