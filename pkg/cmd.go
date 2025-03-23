@@ -13,5 +13,6 @@ var Cmd = &Z.Cmd{
 	Commands: []*Z.Cmd{
 		help.Cmd,
 		ProjectCmd,
+		TodoCmd,
 	},
 }

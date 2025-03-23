@@ -13,8 +13,8 @@ import (
 
 var ProjectCmd = &bonzai.Cmd{
 	Name:    "project",
-	Aliases: []string{"proj", "p"},
-	Summary: "project is a command line tool for managing projects",
+	Aliases: []string{"p"},
+	Summary: "manage projects",
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 		projectDocCmd,

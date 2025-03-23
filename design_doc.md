@@ -64,37 +64,8 @@ The project and finished_project files will follow the [todo.txt](https://github
 
 ## Task Execution Tool
 
-Keeping this simple we will build off the excellent todotxt format. So to keep this simple we will write tools to extend the base todo.sh functionality rather than doing something custom.  
+Keeping this simple we will build off the excellent todotxt format. So to keep this simple we will write tools to extend the base todo.sh functionality rather than doing something custom. For now I will just use the todo command and will only add functionality to edit the todo.txt easier
 
-Heres some cool first pass ideas 
+1. Edit the todo.txt files
 
-1. Ingtegrate with github issues to sync issues with github
-
-### Phases
-
-#### Phase 1: Prototype / Scoping
-
-completed on:
-
-In phase 1 we'll develop the following as a prototype
-
-1. Bare bones task tracking tool
-2. Project List
-4. Updated Doc for ATP and Project Tracking
-
-Success is all these tools exists and my projects are in that format
-
-#### Phase 2: Beta
-
-Iterate on Phase 1, make changes get to a point where we are happy for 2-3 weeks
-
-Some po
-
-#### Phase 3: Gamma
-
-Code Clean up bug fix make pretty
-
-#### Phase 4: Release
-
-Make a Blog Post on arjungandhi.com, going over project mentality + new tools
 
