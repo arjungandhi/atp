@@ -4,7 +4,6 @@ import (
 	"github.com/arjungandhi/go-utils/pkg/shell"
 	bonzai "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
-	"google.golang.org/genproto/googleapis/cloud/retail/v2"
 )
 
 var TodoCmd = &bonzai.Cmd{
@@ -14,7 +13,6 @@ var TodoCmd = &bonzai.Cmd{
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 		taskEditCmd,
-		taskGithubCmd,
 	},
 }
 
@@ -58,23 +56,6 @@ var taskEditAllCmd = &bonzai.Cmd{
 		// Open the tasks file in the editor
 		shell.OpenInEditor(path, done_path)
 
-		return nil
-	},
-}
-
-var taskGithubCmd = &bonzai.Cmd{
-	Name:     "github",
-	Summary:  "works with github tasks",
-	Aliases:  []string{"gh, g"},
-	Commands: []*bonzai.Cmd{help.Cmd, taskGithubSyncCmd},
-}
-
-var taskGithubSyncCmd = &bonzai.Cmd{
-	Name:     "sync",
-	Summary:  "syncs the tasks with github",
-	Aliases:  []string{"s"},
-	Commands: []*bonzai.Cmd{help.Cmd},
-	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		return nil
 	},
 }
