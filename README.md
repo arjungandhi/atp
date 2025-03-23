@@ -67,23 +67,14 @@ code of the application. See the source or run the program with help to
 access it.
 
 
+## Setup
+
+Define a storage location for your ATP data. This can be a directory or
+a file. The default is `~/.atp` but can be overridden with the '$ATP_DIR' env var
+
+
 ## Design Doc
 
-ATP manages tasks, (as opposed to higher level concepts like projects)
-
-Tasks are the lowest unit of work in my life 
-
-ATP as a tool has the following responsibilities 
-- Keep a list of all non external* things I need to do, (regardless of work/ personal/ adventure whatever
-- Track my time spent on those items
-- Do a first pass sort and organize on those tasks (this will almost certainly never be perfect)
-- Add those items as events into a calendar while respecting actual calendar events
-
-*Non External means not a calendar event/ involving other people
-
-As Tasks are the lowest level of work in my life, ATP is my lowest level planning tool, as such that there are a few design tenants that arise from this
-
-1. Simple: the core of ATP should be dead simple to hit the jobs described above
-2. Tasks as a store of data: as tasks are the lowest level of work in my system there are certainly lots of information that could be useful to store with them that I'm not thinking of now. As such its probably easiest to store that data in the tasks its self
+Stored in [design_doc.md](design_doc.md)
 
 
