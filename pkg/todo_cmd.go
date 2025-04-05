@@ -1,6 +1,11 @@
 package atp
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/arjungandhi/atp/pkg/todo"
+	"github.com/arjungandhi/go-utils/pkg/prompt"
 	"github.com/arjungandhi/go-utils/pkg/shell"
 	bonzai "github.com/rwxrob/bonzai/z"
 	"github.com/rwxrob/help"
@@ -56,6 +61,39 @@ var taskEditAllCmd = &bonzai.Cmd{
 		// Open the tasks file in the editor
 		shell.OpenInEditor(path, done_path)
 
+		return nil
+	},
+}
+
+var taskAddCmd = &bonzai.Cmd{
+	Name:     "add",
+	Aliases:  []string{"a"},
+	Summary:  "add a task",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		// convert args to a string split by " "
+		task_str := strings.Join(args, " ")
+		var err error
+		// if task_str is empty, prompt for input
+		if task_str == "" {
+			// prompt for input
+			task_str, err = prompt.PromptString("Enter Task")
+			if err != nil {
+				return err
+			}
+		}
+
+		// convert this string to a todo task
+		input_todo := todo.FromString(task_str)
+
+		// add the todo to the list
+		err = AddTodo(input_todo)
+		if err != nil {
+			return err
+		}
+
+		// print confirmation message
+		fmt.Printf("Added task: %s", input_todo.String())
 		return nil
 	},
 }
