@@ -84,7 +84,7 @@ func getDoneTodoPath() (string, error) {
 }
 
 // get todos
-func getTodos() ([]*todo.Todo, error) {
+func GetTodos() ([]*todo.Todo, error) {
 	// get the todo file path
 	path, err := getTodoPath()
 
@@ -106,7 +106,7 @@ func getTodos() ([]*todo.Todo, error) {
 }
 
 // get all todos
-func getAllTodos() ([]*todo.Todo, error) {
+func GetAllTodos() ([]*todo.Todo, error) {
 	// get the todo file path
 	path, err := getTodoPath()
 
@@ -191,5 +191,23 @@ func WriteAllTodos(todos []*todo.Todo) error {
 		return fmt.Errorf("Unable to write todos to file: %w", err)
 	}
 
+	return nil
+}
+
+// Add todo item
+func AddTodo(todo *todo.Todo) error {
+	// get all todo items
+	todos, err := GetAllTodos()
+	if err != nil {
+		return fmt.Errorf("Unable to get todos: %w", err)
+	}
+
+	// append the new todo item
+	todos = append(todos, todo)
+	// write the todo items to the file
+	err = WriteAllTodos(todos)
+	if err != nil {
+		return fmt.Errorf("Unable to write todos: %w", err)
+	}
 	return nil
 }
