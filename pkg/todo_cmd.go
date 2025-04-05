@@ -18,6 +18,7 @@ var TodoCmd = &bonzai.Cmd{
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 		taskEditCmd,
+		taskAddCmd,
 	},
 }
 
@@ -93,7 +94,7 @@ var taskAddCmd = &bonzai.Cmd{
 		}
 
 		// print confirmation message
-		fmt.Printf("Added task: %s", input_todo.String())
+		fmt.Printf("Added task: %s\n", input_todo.String())
 		return nil
 	},
 }
