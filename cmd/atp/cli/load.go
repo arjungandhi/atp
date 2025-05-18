@@ -57,7 +57,6 @@ func GetRepos() ([]*repo.Repo, error) {
 	return projects, err
 }
 
-// checks if user is within list of projects P
 // if they are returns project else returs nil
 func userInRepo(projects []*repo.Repo) (*repo.Repo, error) {
 	// get the current user dir
@@ -128,7 +127,7 @@ func ProjectDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	project_dir := filepath.Join(atp_dir, "projects")
+	project_dir := filepath.Join(atp_dir, "project")
 	if _, err := os.Stat(project_dir); os.IsNotExist(err) {
 		err = os.MkdirAll(project_dir, os.ModePerm)
 		if err != nil {
