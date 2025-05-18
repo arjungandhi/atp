@@ -3,6 +3,7 @@ package todo
 import (
 	"bufio"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -197,6 +198,67 @@ func WriteTodoFile(path string, todos []*Todo) error {
 	writer.Flush()
 
 	return nil
+}
+
+// Load todo dir
+func LoadTodoDir(path string) ([]*Todo, error) {
+	todo_path := ActiveTodoPath(path)
+	done_path := DoneTodoPath(path)
+
+	todos, err := LoadTodoFile(todo_path)
+	if err != nil {
+		return nil, err
+	}
+
+	done_todos, err := LoadTodoFile(done_path)
+	if err != nil {
+		return nil, err
+	}
+
+	// append done todos to the list
+	todos = append(todos, done_todos...)
+
+	return todos, nil
+}
+
+// Write todo dir
+func WriteTodoDir(path string, todos []*Todo) error {
+	todo_path := ActiveTodoPath(path)
+	done_path := DoneTodoPath(path)
+
+	// split the todos into active and done
+	active_todos := []*Todo{}
+	done_todos := []*Todo{}
+
+	for _, todo := range todos {
+		if todo.Done {
+			done_todos = append(done_todos, todo)
+		} else {
+			active_todos = append(active_todos, todo)
+		}
+	}
+
+	err := WriteTodoFile(todo_path, active_todos)
+	if err != nil {
+		return err
+	}
+
+	err = WriteTodoFile(done_path, done_todos)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// todo file path
+func ActiveTodoPath(dir string) string {
+	return filepath.Join(dir, "todo.txt")
+}
+
+// done file path
+func DoneTodoPath(dir string) string {
+	return filepath.Join(dir, "done.txt")
 }
 
 // gets Next X characters of a string up with a max of the full string

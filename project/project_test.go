@@ -1,11 +1,11 @@
-package atp
+package project
 
 import (
 	"os"
 	"testing"
 
-	"github.com/arjungandhi/atp/pkg/repo"
-	"github.com/arjungandhi/atp/pkg/todo"
+	"github.com/arjungandhi/atp/repo"
+	"github.com/arjungandhi/atp/todo"
 )
 
 func TestNewProject(t *testing.T) {

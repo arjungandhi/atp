@@ -1,12 +1,12 @@
-package atp
+package project
 
 import (
 	"fmt"
 	"slices"
 	"strings"
 
-	"github.com/arjungandhi/atp/pkg/repo"
-	"github.com/arjungandhi/atp/pkg/todo"
+	"github.com/arjungandhi/atp/repo"
+	"github.com/arjungandhi/atp/todo"
 )
 
 type Project struct {
@@ -103,11 +103,36 @@ func (p *Project) TodoString() string {
 	return p.ToTodo().String()
 }
 
-// Load a file contianing projects
+// Load a Project Dir
+func LoadProjectsDir(dir_path string, repos []*repo.Repo) ([]*Project, error) {
+	// load the project file and the done file if it exists
+	active_path := ActiveFilePath(dir_path)
+	done_path := DoneFilePath(dir_path)
+	projects := []*Project{}
+	// load the active projects
+	active_projects, err := LoadProjectFile(active_path, repos)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to load active projects %s, %w", active_path, err)
+	}
+
+	// load the done projects
+	done_projects, err := LoadProjectFile(done_path, repos)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to load done projects %s, %w", done_path, err)
+	}
+
+	// combine the projects
+	projects = append(active_projects, done_projects...)
+
+	return projects, nil
+}
+
+// Load a Project file
 func LoadProjectFile(path string, repos []*repo.Repo) ([]*Project, error) {
+	// load the file
 	todos, err := todo.LoadTodoFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load file %w", err)
+		return nil, fmt.Errorf("Failed to load project file %s, %w", path, err)
 	}
 
 	projects := []*Project{}
@@ -124,16 +149,51 @@ func LoadProjectFile(path string, repos []*repo.Repo) ([]*Project, error) {
 	return projects, nil
 }
 
-// write projects to a file
-func WriteProjectFile(path string, projects []*Project) error {
-	// convert all projects todos
-	todos := []*todo.Todo{}
+// Write projects to a projecte dir
+func WriteProjectsDir(dir_path string, projects []*Project) error {
+	// sort the projects
+	SortProjects(projects)
+
+	// split the projects into active and done
+	active_path := ActiveFilePath(dir_path)
+	done_path := DoneFilePath(dir_path)
+	active_projects := []*Project{}
+	done_projects := []*Project{}
+
 	for _, p := range projects {
-		todos = append(todos, p.ToTodo())
+		if p.Done {
+			done_projects = append(done_projects, p)
+		} else {
+			active_projects = append(active_projects, p)
+		}
 	}
 
+	// write the active projects
+	err := WriteProjectFile(active_path, active_projects)
+	if err != nil {
+		return fmt.Errorf("Failed to write active projects %s, %w", active_path, err)
+	}
+
+	// write the done projects
+	err = WriteProjectFile(done_path, done_projects)
+	if err != nil {
+		return fmt.Errorf("Failed to write done projects %s, %w", done_path, err)
+	}
+
+	return nil
+}
+
+// write projects to a file
+func WriteProjectFile(path string, projects []*Project) error {
+	// convert the projects to todos
+	todos := []*todo.Todo{}
+	for _, p := range projects {
+		t := p.ToTodo()
+		todos = append(todos, t)
+	}
 	// write the file
 	return todo.WriteTodoFile(path, todos)
+
 }
 
 // sort a list of projects
@@ -150,4 +210,20 @@ func SortProjects(projects []*Project) {
 
 		return strings.Compare(a.Name, b.Name)
 	})
+}
+
+// get active file path
+func ActiveFilePath(dir_path string) string {
+	// get the active file
+	active_path := fmt.Sprintf("%s/projects.txt", dir_path)
+
+	return active_path
+}
+
+// get done file
+func DoneFilePath(dir_path string) string {
+	// get the done file
+	done_path := fmt.Sprintf("%s/done.txt", dir_path)
+
+	return done_path
 }
