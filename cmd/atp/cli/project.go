@@ -1,10 +1,11 @@
-package atp
+package cli
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/arjungandhi/atp/pkg/todo"
+	"github.com/arjungandhi/atp/project"
+	"github.com/arjungandhi/atp/todo"
 	"github.com/arjungandhi/go-utils/pkg/prompt"
 	"github.com/arjungandhi/go-utils/pkg/shell"
 	bonzai "github.com/rwxrob/bonzai/z"
@@ -35,13 +36,16 @@ var projectEditCmd = &bonzai.Cmd{
 	Commands: []*bonzai.Cmd{help.Cmd, projectEditAllCmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get the active projects, path
-		path, err := getProjectPath()
+		path, err := ProjectDir()
 		if err != nil {
 			return err
 		}
 
+		// get active projects
+		project_path := project.ActiveFilePath(path)
+
 		// Open the projects file in the editor
-		shell.OpenInEditor(path)
+		shell.OpenInEditor(project_path)
 
 		return nil
 	},
@@ -53,20 +57,17 @@ var projectEditAllCmd = &bonzai.Cmd{
 	Summary:  "edit all projects",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
-		// get projects path and done path
-		path, err := getProjectPath()
 
+		path, err := ProjectDir()
 		if err != nil {
 			return err
 		}
-
-		done_path, err := getDoneProjectPath()
-		if err != nil {
-			return err
-		}
+		// get all projects
+		done_path := project.DoneFilePath(path)
+		active_path := project.ActiveFilePath(path)
 
 		// Open the projects file in the editor
-		shell.OpenInEditor(path, done_path)
+		shell.OpenInEditor(active_path, done_path)
 
 		return nil
 	},
@@ -89,7 +90,7 @@ var projectAddCmd = &bonzai.Cmd{
 		}
 
 		// get repos
-		repos, err := getRepos()
+		repos, err := GetRepos()
 		if err != nil {
 			return err
 		}
@@ -98,12 +99,12 @@ var projectAddCmd = &bonzai.Cmd{
 		todo := todo.FromString(todo_str)
 
 		// parse todo into project
-		new_project, err := FromTodo(todo, repos)
+		new_project, err := project.FromTodo(todo, repos)
 		if err != nil {
 			return err
 		}
 
-		projects, err := getProjects()
+		projects, err := GetProjects()
 		if err != nil {
 			return err
 		}
@@ -132,7 +133,7 @@ var projectDeleteCmd = &bonzai.Cmd{
 		input := strings.Join(args, " ")
 
 		// load projects
-		projects, err := getProjects()
+		projects, err := GetProjects()
 		if err != nil {
 			return err
 		}
@@ -167,13 +168,13 @@ var projectActivateCmd = &bonzai.Cmd{
 		input := strings.Join(args, " ")
 
 		// load projects
-		projects, err := getProjects()
+		projects, err := GetProjects()
 		if err != nil {
 			return err
 		}
 
 		// get all inactive projects
-		inactive_projects := []*Project{}
+		inactive_projects := []*project.Project{}
 		for _, project := range projects {
 			if !project.Active {
 				inactive_projects = append(inactive_projects, project)
@@ -197,7 +198,7 @@ var projectActivateCmd = &bonzai.Cmd{
 		if selection.Repo == nil {
 
 			// load repos
-			repos, err := getRepos()
+			repos, err := GetRepos()
 			if err != nil {
 				return err
 			}
@@ -233,13 +234,13 @@ var projectDeactivateCmd = &bonzai.Cmd{
 		input := strings.Join(args, " ")
 
 		// load projects
-		projects, err := getProjects()
+		projects, err := GetProjects()
 		if err != nil {
 			return err
 		}
 
 		// get all active projects
-		active_projects := []*Project{}
+		active_projects := []*project.Project{}
 		for _, project := range projects {
 			if project.Active {
 				active_projects = append(active_projects, project)
@@ -272,13 +273,13 @@ var projectFinishCmd = &bonzai.Cmd{
 		input := strings.Join(args, " ")
 
 		// load projects
-		projects, err := getAllProjects()
+		projects, err := GetProjects()
 		if err != nil {
 			return err
 		}
 
 		// get all not done projects
-		not_done_projects := []*Project{}
+		not_done_projects := []*project.Project{}
 		for _, project := range projects {
 			if !project.Done {
 				not_done_projects = append(not_done_projects, project)
@@ -295,7 +296,7 @@ var projectFinishCmd = &bonzai.Cmd{
 		not_done_projects[index].Active = false
 		not_done_projects[index].Done = true
 
-		err = WriteAllProjects(projects)
+		err = WriteProjects(projects)
 
 		fmt.Printf("Finished project: %s\n", not_done_projects[index].String())
 
@@ -312,13 +313,13 @@ var projectDocCmd = &bonzai.Cmd{
 	},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 
-		projects, err := getProjects()
+		projects, err := GetProjects()
 		if err != nil {
 			return err
 		}
 
 		// get the projects with a repo
-		repo_projects := []*Project{}
+		repo_projects := []*project.Project{}
 		for _, project := range projects {
 			if project.Repo != nil {
 				repo_projects = append(repo_projects, project)
@@ -349,15 +350,13 @@ var projectReorgCmd = &bonzai.Cmd{
 	},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get all the projects
-		projects, err := getAllProjects()
+		projects, err := GetProjects()
 		if err != nil {
 			return err
 		}
 
-		SortProjects(projects)
-
 		// write the projects to the file
-		err = WriteAllProjects(projects)
+		err = WriteProjects(projects)
 		if err != nil {
 			return err
 		}

@@ -1,10 +1,10 @@
-package atp
+package cli
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/arjungandhi/atp/pkg/todo"
+	"github.com/arjungandhi/atp/todo"
 	"github.com/arjungandhi/go-utils/pkg/prompt"
 	"github.com/arjungandhi/go-utils/pkg/shell"
 	bonzai "github.com/rwxrob/bonzai/z"
@@ -29,13 +29,15 @@ var taskEditCmd = &bonzai.Cmd{
 	Commands: []*bonzai.Cmd{help.Cmd, taskEditAllCmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get the todo tasks, path
-		path, err := getTodoPath()
+		path, err := TodoDir()
 		if err != nil {
 			return err
 		}
 
+		todo_path := todo.ActiveTodoPath(path)
+
 		// Open the tasks file in the editor
-		shell.OpenInEditor(path)
+		shell.OpenInEditor(todo_path)
 
 		return nil
 	},
@@ -48,19 +50,17 @@ var taskEditAllCmd = &bonzai.Cmd{
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get tasks path and done path
-		path, err := getTodoPath()
+		path, err := TodoDir()
 
 		if err != nil {
 			return err
 		}
 
-		done_path, err := getDoneTodoPath()
-		if err != nil {
-			return err
-		}
+		active_path := todo.ActiveTodoPath(path)
+		done_path := todo.DoneTodoPath(path)
 
 		// Open the tasks file in the editor
-		shell.OpenInEditor(path, done_path)
+		shell.OpenInEditor(active_path, done_path)
 
 		return nil
 	},
@@ -87,11 +87,16 @@ var taskAddCmd = &bonzai.Cmd{
 		// convert this string to a todo task
 		input_todo := todo.FromString(task_str)
 
-		// add the todo to the list
-		err = AddTodo(input_todo)
+		todos, err := GetTodos()
 		if err != nil {
 			return err
 		}
+
+		// add the task to the list
+		todos = append(todos, input_todo)
+
+		// write the todos to the file
+		WriteTodos(todos)
 
 		// print confirmation message
 		fmt.Printf("Added task: %s\n", input_todo.String())
