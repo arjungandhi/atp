@@ -21,6 +21,7 @@ var TodoCmd = &bonzai.Cmd{
 		taskEditCmd,
 		taskAddCmd,
 		recurCmd,
+		remindCmd,
 	},
 }
 
@@ -144,6 +145,164 @@ var recurEditCmd = &bonzai.Cmd{
 
 		recurPath := todo.RecurringTasksPath(path)
 		shell.OpenInEditor(recurPath)
+		return nil
+	},
+}
+
+var remindCmd = &bonzai.Cmd{
+	Name:    "remind",
+	Aliases: []string{"rem"},
+	Summary: "manage reminder tasks",
+	Commands: []*bonzai.Cmd{
+		help.Cmd,
+		remindAddCmd,
+		remindEditCmd,
+		remindListCmd,
+		remindProcessCmd,
+	},
+}
+
+var remindAddCmd = &bonzai.Cmd{
+	Name:     "add",
+	Aliases:  []string{"a"},
+	Summary:  "add a reminder task",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		// convert args to a string split by " "
+		task_str := strings.Join(args, " ")
+		var err error
+		
+		// if task_str is empty, prompt for input
+		if task_str == "" {
+			task_str, err = prompt.PromptString("Enter reminder task")
+			if err != nil {
+				return err
+			}
+		}
+
+		// Prompt for reminder date
+		dateStr, err := prompt.PromptString("Enter reminder date (YYYY-MM-DD)")
+		if err != nil {
+			return err
+		}
+
+		// Validate date format
+		_, err = time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", dateStr)
+		}
+
+		// Add remind label to task string if not already present
+		if !strings.Contains(task_str, "remind:") {
+			task_str += " remind:" + dateStr
+		}
+
+		// convert this string to a todo task
+		reminder := todo.FromString(task_str)
+
+		// Validate that remind label exists
+		if _, exists := reminder.Labels["remind"]; !exists {
+			return fmt.Errorf("reminder task must have a remind:YYYY-MM-DD label")
+		}
+
+		// Add the reminder task
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		err = todo.AddReminderTask(path, reminder)
+		if err != nil {
+			return err
+		}
+
+		// print confirmation message
+		fmt.Printf("Added reminder task: %s\n", reminder.String())
+		return nil
+	},
+}
+
+var remindEditCmd = &bonzai.Cmd{
+	Name:     "edit",
+	Aliases:  []string{"e"},
+	Summary:  "edit reminders file",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		reminderPath := todo.ReminderTasksPath(path)
+		shell.OpenInEditor(reminderPath)
+		return nil
+	},
+}
+
+var remindListCmd = &bonzai.Cmd{
+	Name:     "list",
+	Aliases:  []string{"l", "ls"},
+	Summary:  "list all pending reminder tasks",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		reminderPath := todo.ReminderTasksPath(path)
+		reminders, err := todo.LoadReminderTasks(reminderPath)
+		if err != nil {
+			return err
+		}
+
+		if len(reminders) == 0 {
+			fmt.Println("No pending reminder tasks")
+			return nil
+		}
+
+		// Sort by reminder date
+		todo.SortRemindersByDate(reminders)
+
+		fmt.Printf("Pending reminder tasks (%d):\n", len(reminders))
+		for _, reminder := range reminders {
+			remindDate := reminder.Labels["remind"]
+			fmt.Printf("  %s: %s\n", remindDate, reminder.String())
+		}
+
+		return nil
+	},
+}
+
+var remindProcessCmd = &bonzai.Cmd{
+	Name:     "process",
+	Aliases:  []string{"p"},
+	Summary:  "process reminders for today or specified date",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		var processDate time.Time
+		if len(args) > 0 {
+			// Parse specified date
+			processDate, err = time.Parse("2006-01-02", args[0])
+			if err != nil {
+				return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", args[0])
+			}
+		} else {
+			// Use today's date
+			processDate = time.Now()
+		}
+
+		err = todo.ProcessReminders(path, processDate)
+		if err != nil {
+			return fmt.Errorf("failed to process reminders: %w", err)
+		}
+
+		fmt.Printf("Processed reminders for %s\n", processDate.Format("2006-01-02"))
 		return nil
 	},
 }
