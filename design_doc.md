@@ -90,6 +90,38 @@ We will need to be smart about this and not add the task for a period multiple t
 - `atp recur edit` opens the recur.txt file for editing recurring task templates
 - The recurring task system integrates with the existing todo.txt format and file structure
 
+#### Reminder Tasks
+Reminder tasks are one-time future tasks that should only appear in the active todo list on or after their specified reminder date. This is useful for tasks that need to be done in the future but aren't relevant until that date arrives.
+
+Examples:
+- `evaluate if system is still working cancel if not remind:2025-07-15`
+- `cancel renters insurance remind:2025-11-01 @home +personal`
+
+##### Storage Format
+- Reminder tasks are stored in `$ATP_DIR/todo/reminders.txt` using standard todo.txt format
+- Each task includes a `remind:YYYY-MM-DD` label specifying when it should become active
+- Tasks can include all standard todo.txt elements: priority, projects (+), contexts (@), and other labels
+
+##### File Structure
+- `$ATP_DIR/todo/reminders.txt` - Future reminder tasks waiting to be activated
+- Tasks remain in `reminders.txt` until their reminder date arrives
+- On the reminder date, tasks are moved from `reminders.txt` to `todo.txt` and removed from reminders
+
+##### CLI Commands
+- `atp todo remind add [task]` - Add a new reminder task with interactive date prompt
+- `atp todo remind edit` - Edit the reminders.txt file directly
+- `atp todo remind list` - List all pending reminder tasks sorted by date
+- `atp todo remind process` - Process reminders for today (move due reminders to active todos)
+- `atp todo remind process [date]` - Process reminders for a specific date
+
+##### Implementation Details
+- Reminder tasks use the existing Todo struct and parsing logic
+- The `remind:YYYY-MM-DD` label is used to determine activation date
+- Tasks are moved to active todos and deleted from reminders.txt in a single operation
+- No duplicate checking needed since tasks are removed from reminders once processed
+- Integration with existing file backup and error handling patterns
+- Compatible with all existing todo.txt tooling and formats
+
 ## Architecture Changes
 
 ### Package Structure Refactoring
