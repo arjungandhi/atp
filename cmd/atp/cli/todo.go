@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/arjungandhi/atp/todo"
 	"github.com/arjungandhi/go-utils/pkg/prompt"
@@ -19,6 +20,7 @@ var TodoCmd = &bonzai.Cmd{
 		help.Cmd,
 		taskEditCmd,
 		taskAddCmd,
+		recurCmd,
 	},
 }
 
@@ -100,6 +102,48 @@ var taskAddCmd = &bonzai.Cmd{
 
 		// print confirmation message
 		fmt.Printf("Added task: %s\n", input_todo.String())
+		return nil
+	},
+}
+
+var recurCmd = &bonzai.Cmd{
+	Name:    "recur",
+	Aliases: []string{"r"},
+	Summary: "manage recurring tasks",
+	Commands: []*bonzai.Cmd{
+		help.Cmd,
+		recurEditCmd,
+	},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		today := time.Now()
+		err = todo.AddRecurringTodosToDir(path, today)
+		if err != nil {
+			return fmt.Errorf("failed to generate recurring todos: %w", err)
+		}
+
+		fmt.Println("Generated recurring todos for today")
+		return nil
+	},
+}
+
+var recurEditCmd = &bonzai.Cmd{
+	Name:     "edit",
+	Aliases:  []string{"e"},
+	Summary:  "edit recurring tasks file",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		recurPath := todo.RecurringTasksPath(path)
+		shell.OpenInEditor(recurPath)
 		return nil
 	},
 }

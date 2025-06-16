@@ -66,6 +66,43 @@ The project and finished_project files will follow the [todo.txt](https://github
 
 Keeping this simple we will build off the excellent todotxt format. So to keep this simple we will write tools to extend the base todo.sh functionality rather than doing something custom. For now I will just use the todo command and will only add functionality to edit the todo.txt easier
 
-1. Edit the todo.txt files
+### Features
 
+#### Recurring Tasks 
+Reocurring tasks will be stored in a recur.txt file 
+Recurring tasks will be similar in format to a crontab file. 
+It will have the following format
 
+Example:
+```
+@daily do task @tag +context
+@weekly do task @tag +context
+0 0 * * * do task @tag +context
+```
+
+We can then run `atp recur` to look at the tasks that are in the recur.txt file and add them to the todo.txt file if needed
+We will need to be smart about this and not add the task for a period multiple times.
+
+##### Implementation Details
+- Recurring tasks support both simple formats (`@daily`, `@weekly`, `@monthly`) and full cron format (`0 9 * * 1`)
+- Generated todos include a `recur:YYYY-MM-DD` label to track when they were generated and prevent duplicates
+- The system checks existing todos before generating new ones to avoid creating duplicate tasks for the same date
+- `atp recur edit` opens the recur.txt file for editing recurring task templates
+- The recurring task system integrates with the existing todo.txt format and file structure
+
+## Architecture Changes
+
+### Package Structure Refactoring
+The codebase has been refactored from a single `pkg` package to a more modular structure:
+
+- `cmd/atp/` - Main CLI application with subcommands organized into separate files
+- `cmd/atp/cli/` - CLI command implementations and utilities  
+- `project/` - Project management functionality (moved from `pkg`)
+- `todo/` - Todo.txt format parsing and manipulation (moved from `pkg/todo`)
+- `repo/` - Repository management and discovery (moved from `pkg/repo`)
+
+### File Organization Improvements
+- Commands are now organized into separate files (`todo.go`, `project.go`, `load.go`)
+- Utility functions consolidated into `load.go` for better organization
+- Test files moved alongside their corresponding implementation files
+- Improved separation of concerns with dedicated directories for each major component
