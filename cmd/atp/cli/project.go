@@ -15,7 +15,7 @@ import (
 var ProjectCmd = &bonzai.Cmd{
 	Name:    "project",
 	Aliases: []string{"p"},
-	Summary: "manage projects",
+	Summary: "manage projects with phases and repository linking",
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 		projectDocCmd,
@@ -32,7 +32,7 @@ var ProjectCmd = &bonzai.Cmd{
 var projectEditCmd = &bonzai.Cmd{
 	Name:     "edit",
 	Aliases:  []string{"e"},
-	Summary:  "edit the projects",
+	Summary:  "edit active projects in your default editor",
 	Commands: []*bonzai.Cmd{help.Cmd, projectEditAllCmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get the active projects, path
@@ -54,7 +54,7 @@ var projectEditCmd = &bonzai.Cmd{
 var projectEditAllCmd = &bonzai.Cmd{
 	Name:     "all",
 	Aliases:  []string{"a"},
-	Summary:  "edit all projects",
+	Summary:  "edit both active and completed projects",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 
@@ -76,7 +76,7 @@ var projectEditAllCmd = &bonzai.Cmd{
 var projectAddCmd = &bonzai.Cmd{
 	Name:     "add",
 	Aliases:  []string{"a"},
-	Summary:  "add a project to the projects.txt",
+	Summary:  "add a new project",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) (err error) {
 		// args 0 should be the todo string
@@ -126,7 +126,7 @@ var projectAddCmd = &bonzai.Cmd{
 var projectDeleteCmd = &bonzai.Cmd{
 	Name:     "delete",
 	Aliases:  []string{"del", "d"},
-	Summary:  "del a project to the projects.txt",
+	Summary:  "delete a project from the project list",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get input from user
@@ -161,7 +161,7 @@ var projectDeleteCmd = &bonzai.Cmd{
 
 var projectActivateCmd = &bonzai.Cmd{
 	Name:     "activate",
-	Summary:  "activate a project",
+	Summary:  "activate an inactive project and optionally link to repository",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get input from user
@@ -227,7 +227,7 @@ var projectActivateCmd = &bonzai.Cmd{
 
 var projectDeactivateCmd = &bonzai.Cmd{
 	Name:     "deactivate",
-	Summary:  "deactivate a project",
+	Summary:  "deactivate an active project",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get input from user
@@ -266,7 +266,7 @@ var projectDeactivateCmd = &bonzai.Cmd{
 
 var projectFinishCmd = &bonzai.Cmd{
 	Name:     "finish",
-	Summary:  "finish a project",
+	Summary:  "mark a project as completed and move to done.txt",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get input from user
@@ -307,7 +307,7 @@ var projectFinishCmd = &bonzai.Cmd{
 
 var projectDocCmd = &bonzai.Cmd{
 	Name:    "doc",
-	Summary: "gets the doc for a project and opens it in the editor",
+	Summary: "open project documentation file in editor",
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 	},
@@ -344,7 +344,7 @@ var projectDocCmd = &bonzai.Cmd{
 
 var projectReorgCmd = &bonzai.Cmd{
 	Name:    "reorg",
-	Summary: "reorganize the projects into done and not done, also sorts them",
+	Summary: "reorganize and sort projects, separating completed from active",
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 	},

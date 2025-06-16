@@ -15,19 +15,20 @@ import (
 var TodoCmd = &bonzai.Cmd{
 	Name:    "todo",
 	Aliases: []string{"t"},
-	Summary: "manage todos",
+	Summary: "manage todos with recurring and reminder tasks",
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 		taskEditCmd,
 		taskAddCmd,
 		recurCmd,
+		remindCmd,
 	},
 }
 
 var taskEditCmd = &bonzai.Cmd{
 	Name:     "edit",
 	Aliases:  []string{"e"},
-	Summary:  "edit the tasks",
+	Summary:  "edit active todos in your default editor",
 	Commands: []*bonzai.Cmd{help.Cmd, taskEditAllCmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get the todo tasks, path
@@ -48,7 +49,7 @@ var taskEditCmd = &bonzai.Cmd{
 var taskEditAllCmd = &bonzai.Cmd{
 	Name:     "all",
 	Aliases:  []string{"a"},
-	Summary:  "edit all tasks",
+	Summary:  "edit both active and completed todos",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get tasks path and done path
@@ -71,7 +72,7 @@ var taskEditAllCmd = &bonzai.Cmd{
 var taskAddCmd = &bonzai.Cmd{
 	Name:     "add",
 	Aliases:  []string{"a"},
-	Summary:  "add a task",
+	Summary:  "add a new todo item",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// convert args to a string split by " "
@@ -109,7 +110,7 @@ var taskAddCmd = &bonzai.Cmd{
 var recurCmd = &bonzai.Cmd{
 	Name:    "recur",
 	Aliases: []string{"r"},
-	Summary: "manage recurring tasks",
+	Summary: "generate recurring todos for today or manage recurring templates",
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 		recurEditCmd,
@@ -134,7 +135,7 @@ var recurCmd = &bonzai.Cmd{
 var recurEditCmd = &bonzai.Cmd{
 	Name:     "edit",
 	Aliases:  []string{"e"},
-	Summary:  "edit recurring tasks file",
+	Summary:  "edit recurring task templates",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		path, err := TodoDir()
@@ -147,3 +148,154 @@ var recurEditCmd = &bonzai.Cmd{
 		return nil
 	},
 }
+
+var remindCmd = &bonzai.Cmd{
+	Name:    "remind",
+	Aliases: []string{"rem"},
+	Summary: "process reminders for a date or manage reminder tasks",
+	Commands: []*bonzai.Cmd{
+		help.Cmd,
+		remindAddCmd,
+		remindEditCmd,
+		remindListCmd,
+	},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		var processDate time.Time
+		if len(args) > 0 {
+			// Parse specified date
+			processDate, err = time.Parse("2006-01-02", args[0])
+			if err != nil {
+				return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", args[0])
+			}
+		} else {
+			// Use today's date
+			processDate = time.Now()
+		}
+
+		err = todo.ProcessReminders(path, processDate)
+		if err != nil {
+			return fmt.Errorf("failed to process reminders: %w", err)
+		}
+
+		fmt.Printf("Processed reminders for %s\n", processDate.Format("2006-01-02"))
+		return nil
+	},
+}
+
+var remindAddCmd = &bonzai.Cmd{
+	Name:     "add",
+	Aliases:  []string{"a"},
+	Summary:  "add a new reminder task with future due date",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		// convert args to a string split by " "
+		task_str := strings.Join(args, " ")
+		var err error
+		
+		// if task_str is empty, prompt for input
+		if task_str == "" {
+			task_str, err = prompt.PromptString("Enter reminder task")
+			if err != nil {
+				return err
+			}
+		}
+
+		// Prompt for reminder date
+		dateStr, err := prompt.PromptString("Enter reminder date (YYYY-MM-DD)")
+		if err != nil {
+			return err
+		}
+
+		// Validate date format
+		_, err = time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", dateStr)
+		}
+
+		// Add remind label to task string if not already present
+		if !strings.Contains(task_str, "remind:") {
+			task_str += " remind:" + dateStr
+		}
+
+		// convert this string to a todo task
+		reminder := todo.FromString(task_str)
+
+		// Validate that remind label exists
+		if _, exists := reminder.Labels["remind"]; !exists {
+			return fmt.Errorf("reminder task must have a remind:YYYY-MM-DD label")
+		}
+
+		// Add the reminder task
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		err = todo.AddReminderTask(path, reminder)
+		if err != nil {
+			return err
+		}
+
+		// print confirmation message
+		fmt.Printf("Added reminder task: %s\n", reminder.String())
+		return nil
+	},
+}
+
+var remindEditCmd = &bonzai.Cmd{
+	Name:     "edit",
+	Aliases:  []string{"e"},
+	Summary:  "edit pending reminder tasks",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		reminderPath := todo.ReminderTasksPath(path)
+		shell.OpenInEditor(reminderPath)
+		return nil
+	},
+}
+
+var remindListCmd = &bonzai.Cmd{
+	Name:     "list",
+	Aliases:  []string{"l", "ls"},
+	Summary:  "list all pending reminder tasks sorted by date",
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		reminderPath := todo.ReminderTasksPath(path)
+		reminders, err := todo.LoadReminderTasks(reminderPath)
+		if err != nil {
+			return err
+		}
+
+		if len(reminders) == 0 {
+			fmt.Println("No pending reminder tasks")
+			return nil
+		}
+
+		// Sort by reminder date
+		todo.SortRemindersByDate(reminders)
+
+		fmt.Printf("Pending reminder tasks (%d):\n", len(reminders))
+		for _, reminder := range reminders {
+			remindDate := reminder.Labels["remind"]
+			fmt.Printf("  %s: %s\n", remindDate, reminder.String())
+		}
+
+		return nil
+	},
+}
+

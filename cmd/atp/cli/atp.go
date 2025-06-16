@@ -9,7 +9,7 @@ import (
 // its just holds all the other useful commands
 var Cmd = &Z.Cmd{
 	Name:    "atp",
-	Summary: "atp is a command line tool for managing tasks",
+	Summary: "automated task planner - manage projects and todos using todo.txt format",
 	Commands: []*Z.Cmd{
 		help.Cmd,
 		ProjectCmd,
