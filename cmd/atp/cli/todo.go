@@ -158,7 +158,32 @@ var remindCmd = &bonzai.Cmd{
 		remindAddCmd,
 		remindEditCmd,
 		remindListCmd,
-		remindProcessCmd,
+	},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		path, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		var processDate time.Time
+		if len(args) > 0 {
+			// Parse specified date
+			processDate, err = time.Parse("2006-01-02", args[0])
+			if err != nil {
+				return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", args[0])
+			}
+		} else {
+			// Use today's date
+			processDate = time.Now()
+		}
+
+		err = todo.ProcessReminders(path, processDate)
+		if err != nil {
+			return fmt.Errorf("failed to process reminders: %w", err)
+		}
+
+		fmt.Printf("Processed reminders for %s\n", processDate.Format("2006-01-02"))
+		return nil
 	},
 }
 
@@ -274,35 +299,3 @@ var remindListCmd = &bonzai.Cmd{
 	},
 }
 
-var remindProcessCmd = &bonzai.Cmd{
-	Name:     "process",
-	Aliases:  []string{"p"},
-	Summary:  "process reminders for today or specified date",
-	Commands: []*bonzai.Cmd{help.Cmd},
-	Call: func(cmd *bonzai.Cmd, args ...string) error {
-		path, err := TodoDir()
-		if err != nil {
-			return err
-		}
-
-		var processDate time.Time
-		if len(args) > 0 {
-			// Parse specified date
-			processDate, err = time.Parse("2006-01-02", args[0])
-			if err != nil {
-				return fmt.Errorf("invalid date format: %s (expected YYYY-MM-DD)", args[0])
-			}
-		} else {
-			// Use today's date
-			processDate = time.Now()
-		}
-
-		err = todo.ProcessReminders(path, processDate)
-		if err != nil {
-			return fmt.Errorf("failed to process reminders: %w", err)
-		}
-
-		fmt.Printf("Processed reminders for %s\n", processDate.Format("2006-01-02"))
-		return nil
-	},
-}
