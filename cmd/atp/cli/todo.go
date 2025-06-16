@@ -15,7 +15,7 @@ import (
 var TodoCmd = &bonzai.Cmd{
 	Name:    "todo",
 	Aliases: []string{"t"},
-	Summary: "manage todos",
+	Summary: "manage todos with recurring and reminder tasks",
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 		taskEditCmd,
@@ -28,7 +28,7 @@ var TodoCmd = &bonzai.Cmd{
 var taskEditCmd = &bonzai.Cmd{
 	Name:     "edit",
 	Aliases:  []string{"e"},
-	Summary:  "edit the tasks",
+	Summary:  "edit active todos in your default editor",
 	Commands: []*bonzai.Cmd{help.Cmd, taskEditAllCmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get the todo tasks, path
@@ -49,7 +49,7 @@ var taskEditCmd = &bonzai.Cmd{
 var taskEditAllCmd = &bonzai.Cmd{
 	Name:     "all",
 	Aliases:  []string{"a"},
-	Summary:  "edit all tasks",
+	Summary:  "edit both active and completed todos",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// get tasks path and done path
@@ -72,7 +72,7 @@ var taskEditAllCmd = &bonzai.Cmd{
 var taskAddCmd = &bonzai.Cmd{
 	Name:     "add",
 	Aliases:  []string{"a"},
-	Summary:  "add a task",
+	Summary:  "add a new todo item",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// convert args to a string split by " "
@@ -110,7 +110,7 @@ var taskAddCmd = &bonzai.Cmd{
 var recurCmd = &bonzai.Cmd{
 	Name:    "recur",
 	Aliases: []string{"r"},
-	Summary: "manage recurring tasks",
+	Summary: "generate recurring todos for today or manage recurring templates",
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 		recurEditCmd,
@@ -135,7 +135,7 @@ var recurCmd = &bonzai.Cmd{
 var recurEditCmd = &bonzai.Cmd{
 	Name:     "edit",
 	Aliases:  []string{"e"},
-	Summary:  "edit recurring tasks file",
+	Summary:  "edit recurring task templates",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		path, err := TodoDir()
@@ -152,7 +152,7 @@ var recurEditCmd = &bonzai.Cmd{
 var remindCmd = &bonzai.Cmd{
 	Name:    "remind",
 	Aliases: []string{"rem"},
-	Summary: "manage reminder tasks",
+	Summary: "process reminders for a date or manage reminder tasks",
 	Commands: []*bonzai.Cmd{
 		help.Cmd,
 		remindAddCmd,
@@ -190,7 +190,7 @@ var remindCmd = &bonzai.Cmd{
 var remindAddCmd = &bonzai.Cmd{
 	Name:     "add",
 	Aliases:  []string{"a"},
-	Summary:  "add a reminder task",
+	Summary:  "add a new reminder task with future due date",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		// convert args to a string split by " "
@@ -250,7 +250,7 @@ var remindAddCmd = &bonzai.Cmd{
 var remindEditCmd = &bonzai.Cmd{
 	Name:     "edit",
 	Aliases:  []string{"e"},
-	Summary:  "edit reminders file",
+	Summary:  "edit pending reminder tasks",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		path, err := TodoDir()
@@ -267,7 +267,7 @@ var remindEditCmd = &bonzai.Cmd{
 var remindListCmd = &bonzai.Cmd{
 	Name:     "list",
 	Aliases:  []string{"l", "ls"},
-	Summary:  "list all pending reminder tasks",
+	Summary:  "list all pending reminder tasks sorted by date",
 	Commands: []*bonzai.Cmd{help.Cmd},
 	Call: func(cmd *bonzai.Cmd, args ...string) error {
 		path, err := TodoDir()
