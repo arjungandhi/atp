@@ -44,15 +44,17 @@ func FromString(line string) *Todo {
 		line = strings.TrimPrefix(line, "x ")
 	}
 
-	// Match completion date after the x (e.g., '2025-02-15')
-	reCompletionDate := regexp.MustCompile(`(\d{4}-\d{2}-\d{2})`)
-	completionDateMatch := reCompletionDate.FindStringSubmatch(getXChar(line, 10))
-	if len(completionDateMatch) > 0 {
-		completionDate, err := time.Parse("2006-01-02", completionDateMatch[1])
-		if err == nil {
-			todo.CompletionDate = completionDate
+	// Match completion date after the x (e.g., '2025-02-15') - only for completed todos
+	if todo.Done {
+		reCompletionDate := regexp.MustCompile(`(\d{4}-\d{2}-\d{2})`)
+		completionDateMatch := reCompletionDate.FindStringSubmatch(getXChar(line, 10))
+		if len(completionDateMatch) > 0 {
+			completionDate, err := time.Parse("2006-01-02", completionDateMatch[1])
+			if err == nil {
+				todo.CompletionDate = completionDate
+			}
+			line = strings.Replace(line, completionDateMatch[0], "", 1)
 		}
-		line = strings.Replace(line, completionDateMatch[0], "", 1)
 	}
 
 	// Match priority, e.g., (A), (B), etc.
