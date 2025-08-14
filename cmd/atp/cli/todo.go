@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/arjungandhi/atp/config"
+	"github.com/arjungandhi/atp/github"
 	"github.com/arjungandhi/atp/todo"
 	"github.com/arjungandhi/go-utils/pkg/prompt"
 	"github.com/arjungandhi/go-utils/pkg/shell"
@@ -22,6 +24,7 @@ var TodoCmd = &bonzai.Cmd{
 		taskAddCmd,
 		recurCmd,
 		remindCmd,
+		githubCmd,
 	},
 }
 
@@ -297,5 +300,89 @@ var remindListCmd = &bonzai.Cmd{
 
 		return nil
 	},
+}
+
+var githubCmd = &bonzai.Cmd{
+	Name:    "github",
+	Aliases: []string{"gh"},
+	Summary: "sync GitHub project issues with local todos",
+	Commands: []*bonzai.Cmd{
+		help.Cmd,
+		githubSyncCmd,
+	},
+}
+
+var githubSyncCmd = &bonzai.Cmd{
+	Name:     "sync",
+	Aliases:  []string{"s"},
+	Summary:  "sync all configured GitHub projects",
+	Description: `Sync GitHub project issues with local todos.
+
+Projects are loaded from config.toml in your ATP directory.
+To add more projects, edit the [[github.projects]] sections:
+
+  [[github.projects]]
+  name = "myproject"
+  organization = "your-org"
+  project_number = 123
+  status_filters = ["Todo", "In Progress"]
+
+Each project becomes a subcommand: 'atp todo github sync myproject'`,
+	Commands: []*bonzai.Cmd{help.Cmd},
+	Call: func(cmd *bonzai.Cmd, args ...string) error {
+		todoDir, err := TodoDir()
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Syncing all configured projects (assigned to you)...\n")
+		
+		err = github.SyncAllGitHubProjects(todoDir)
+		if err != nil {
+			return fmt.Errorf("sync failed: %w", err)
+		}
+
+		fmt.Println("✓ All projects synced successfully")
+		return nil
+	},
+}
+
+func init() {
+	loadGitHubSyncCommands()
+}
+
+func loadGitHubSyncCommands() {
+	atpDir, err := AtpDir()
+	if err != nil {
+		return
+	}
+
+	cfg, err := config.LoadConfig(atpDir)
+	if err != nil {
+		return
+	}
+
+	for _, project := range cfg.GetAllGitHubProjects() {
+		projectName := project.Name
+		githubSyncCmd.Commands = append(githubSyncCmd.Commands, &bonzai.Cmd{
+			Name:     projectName,
+			Summary:  fmt.Sprintf("sync %s project", projectName),
+			Commands: []*bonzai.Cmd{help.Cmd},
+			Call: func(cmd *bonzai.Cmd, args ...string) error {
+				todoDir, err := TodoDir()
+				if err != nil {
+					return err
+				}
+
+				err = github.SyncGitHubProject(todoDir, projectName)
+				if err != nil {
+					return fmt.Errorf("sync failed: %w", err)
+				}
+
+				fmt.Printf("✓ %s project sync completed successfully\n", projectName)
+				return nil
+			},
+		})
+	}
 }
 
