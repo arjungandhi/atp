@@ -299,6 +299,7 @@ func createTodoFromPR(pr PullRequestInfo) *todo.Todo {
 	t.Labels = map[string]string{
 		"repo": repoName,
 		"pr":   strconv.Itoa(pr.Number),
+		"url":  pr.URL,
 	}
 
 	t.Projects = []string{"github"}
@@ -321,6 +322,9 @@ func updateExistingTodoFromPR(existingTodo *todo.Todo, pr PullRequestInfo) {
 	} else {
 		existingTodo.Description = pr.Title
 	}
+
+	// Update URL
+	existingTodo.Labels["url"] = pr.URL
 
 	// Extract repo name from PR if not already set
 	if _, exists := existingTodo.Labels["repo"]; !exists {
