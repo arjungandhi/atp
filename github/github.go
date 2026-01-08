@@ -41,6 +41,21 @@ type ProjectIssue struct {
 	UpdatedAt time.Time
 }
 
+type PullRequestInfo struct {
+	ID          int
+	Title       string
+	Body        string
+	Number      int
+	State       string
+	URL         string
+	RepoOwner   string
+	RepoName    string
+	Labels      []string
+	UpdatedAt   time.Time
+	IsDraft     bool
+	IsReview    bool // true if this is a review request, false if it's the user's PR
+}
+
 func NewClient(org string) (*Client, error) {
 	token, err := getGitHubToken()
 	if err != nil {
@@ -577,4 +592,117 @@ func (c *Client) lookupProjectItemID(projectNumber int, issueURL string) (string
 	}
 
 	return "", fmt.Errorf("project item not found for issue URL: %s", issueURL)
+}
+
+// GetUserPullRequests fetches open pull requests created by or assigned to the current user
+func (c *Client) GetUserPullRequests() ([]PullRequestInfo, error) {
+	var allPRs []PullRequestInfo
+
+	// Search for PRs authored by the current user
+	opts := &github.SearchOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+
+	// Query: is:pr is:open author:username org:organization
+	query := fmt.Sprintf("is:pr is:open author:%s org:%s", c.currentUser, c.org)
+
+	for {
+		result, resp, err := c.restClient.Search.Issues(c.ctx, query, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to search for user PRs: %w", err)
+		}
+
+		for _, issue := range result.Issues {
+			pr, err := c.convertIssueToPR(issue, false)
+			if err != nil {
+				fmt.Printf("Warning: failed to convert issue to PR: %v\n", err)
+				continue
+			}
+			allPRs = append(allPRs, pr)
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return allPRs, nil
+}
+
+// GetReviewRequests fetches open pull requests where the current user is requested to review
+func (c *Client) GetReviewRequests() ([]PullRequestInfo, error) {
+	var allPRs []PullRequestInfo
+
+	// Search for PRs with review requested from the current user
+	opts := &github.SearchOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+
+	// Query: is:pr is:open review-requested:username org:organization
+	query := fmt.Sprintf("is:pr is:open review-requested:%s org:%s", c.currentUser, c.org)
+
+	for {
+		result, resp, err := c.restClient.Search.Issues(c.ctx, query, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to search for review requests: %w", err)
+		}
+
+		for _, issue := range result.Issues {
+			pr, err := c.convertIssueToPR(issue, true)
+			if err != nil {
+				fmt.Printf("Warning: failed to convert issue to PR: %v\n", err)
+				continue
+			}
+			allPRs = append(allPRs, pr)
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	return allPRs, nil
+}
+
+// convertIssueToPR converts a GitHub issue search result to a PullRequestInfo
+func (c *Client) convertIssueToPR(issue *github.Issue, isReview bool) (PullRequestInfo, error) {
+	if issue.PullRequestLinks == nil {
+		return PullRequestInfo{}, fmt.Errorf("issue is not a pull request")
+	}
+
+	// Extract repo owner and name from the repository URL
+	var repoOwner, repoName string
+	if issue.Repository != nil {
+		repoOwner = issue.Repository.GetOwner().GetLogin()
+		repoName = issue.Repository.GetName()
+	} else {
+		// Extract from URL if repository info not available
+		parts := strings.Split(issue.GetHTMLURL(), "/")
+		if len(parts) >= 5 {
+			repoOwner = parts[3]
+			repoName = parts[4]
+		}
+	}
+
+	var labels []string
+	for _, label := range issue.Labels {
+		labels = append(labels, label.GetName())
+	}
+
+	return PullRequestInfo{
+		ID:        int(issue.GetID()),
+		Title:     issue.GetTitle(),
+		Body:      issue.GetBody(),
+		Number:    issue.GetNumber(),
+		State:     issue.GetState(),
+		URL:       issue.GetHTMLURL(),
+		RepoOwner: repoOwner,
+		RepoName:  repoName,
+		Labels:    labels,
+		UpdatedAt: issue.GetUpdatedAt().Time,
+		IsDraft:   issue.GetDraft(),
+		IsReview:  isReview,
+	}, nil
 }

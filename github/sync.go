@@ -49,7 +49,7 @@ func SyncAllGitHubProjects(todoDir string) error {
 
 func SyncIssues(todoDir string, organization string, projectNumber int, statusFilters []string) error {
 	atpDir := filepath.Dir(todoDir)
-	
+
 	// Get last sync time for timestamp-based conflict resolution
 	lastSyncTime, err := getLastSyncTime(atpDir)
 	if err != nil {
@@ -75,7 +75,7 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 		fmt.Printf("GitHub issues updated since last sync - accepting all GitHub changes\n")
 	} else {
 		fmt.Printf("No GitHub updates since last sync - syncing local changes first\n")
-		
+
 		// First, sync completed todos to GitHub (close issues that were marked done locally)
 		if err := SyncCompletedTodos(todoDir); err != nil {
 			return fmt.Errorf("failed to sync completed todos to GitHub: %w", err)
@@ -92,6 +92,20 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 		return fmt.Errorf("failed to fetch GitHub issues: %w", err)
 	}
 
+	// Fetch pull requests
+	fmt.Printf("Fetching open pull requests...\n")
+	userPRs, err := client.GetUserPullRequests()
+	if err != nil {
+		return fmt.Errorf("failed to fetch user PRs: %w", err)
+	}
+	fmt.Printf("Found %d open PRs created by you\n", len(userPRs))
+
+	reviewRequests, err := client.GetReviewRequests()
+	if err != nil {
+		return fmt.Errorf("failed to fetch review requests: %w", err)
+	}
+	fmt.Printf("Found %d open review requests\n", len(reviewRequests))
+
 	todos, err := todo.LoadTodoDir(todoDir)
 	if err != nil {
 		return fmt.Errorf("failed to load todos: %w", err)
@@ -100,6 +114,7 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 	existingGitHubTodos := buildGitHubTodoMap(todos)
 	newTodos := filterNonGitHubTodos(todos)
 
+	// Process issues
 	for _, issue := range issues {
 		fmt.Printf("Processing issue: %s (%s)\n", issue.Title, issue.GitHubStatus)
 		if existingTodo, exists := existingGitHubTodos[issue.URL]; exists {
@@ -121,6 +136,36 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 		} else {
 			fmt.Printf("  Creating new todo\n")
 			newTodo := createTodoFromIssue(issue)
+			newTodos = append(newTodos, newTodo)
+		}
+	}
+
+	// Process user's PRs - always accept GitHub state (read-only)
+	for _, pr := range userPRs {
+		prURL := pr.URL
+		fmt.Printf("Processing PR: %s\n", pr.Title)
+		if existingTodo, exists := existingGitHubTodos[prURL]; exists {
+			fmt.Printf("  Updating existing PR todo (accepting GitHub state)\n")
+			updateExistingTodoFromPR(existingTodo, pr)
+			newTodos = append(newTodos, existingTodo)
+		} else {
+			fmt.Printf("  Creating new PR todo\n")
+			newTodo := createTodoFromPR(pr)
+			newTodos = append(newTodos, newTodo)
+		}
+	}
+
+	// Process review requests - always accept GitHub state (read-only)
+	for _, pr := range reviewRequests {
+		prURL := pr.URL
+		fmt.Printf("Processing review request: %s\n", pr.Title)
+		if existingTodo, exists := existingGitHubTodos[prURL]; exists {
+			fmt.Printf("  Updating existing review request todo (accepting GitHub state)\n")
+			updateExistingTodoFromPR(existingTodo, pr)
+			newTodos = append(newTodos, existingTodo)
+		} else {
+			fmt.Printf("  Creating new review request todo\n")
+			newTodo := createTodoFromPR(pr)
 			newTodos = append(newTodos, newTodo)
 		}
 	}
@@ -220,13 +265,70 @@ func extractRepoFromURL(url string) string {
 
 func reconstructGitHubURL(todoItem *todo.Todo) string {
 	repo, hasRepo := todoItem.Labels["repo"]
-	issue, hasIssue := todoItem.Labels["issue"]
-	
-	if !hasRepo || !hasIssue {
-		return ""
+
+	// Check for issue
+	if issue, hasIssue := todoItem.Labels["issue"]; hasIssue && hasRepo {
+		return fmt.Sprintf("https://github.com/%s/issues/%s", repo, issue)
 	}
-	
-	return fmt.Sprintf("https://github.com/%s/issues/%s", repo, issue)
+
+	// Check for PR
+	if pr, hasPR := todoItem.Labels["pr"]; hasPR && hasRepo {
+		return fmt.Sprintf("https://github.com/%s/pull/%s", repo, pr)
+	}
+
+	return ""
+}
+
+func createTodoFromPR(pr PullRequestInfo) *todo.Todo {
+	t := todo.NewTodo()
+
+	// Prefix title for review requests, no prefix for user's own PRs
+	if pr.IsReview {
+		t.Description = "Review: " + pr.Title
+	} else {
+		t.Description = pr.Title
+	}
+
+	t.Done = pr.State == "closed"
+	if t.Done {
+		t.CompletionDate = time.Now()
+	}
+
+	repoName := pr.RepoOwner + "/" + pr.RepoName
+
+	t.Labels = map[string]string{
+		"repo": repoName,
+		"pr":   strconv.Itoa(pr.Number),
+	}
+
+	t.Projects = []string{"github"}
+
+	return t
+}
+
+func updateExistingTodoFromPR(existingTodo *todo.Todo, pr PullRequestInfo) {
+	if pr.State == "closed" && !existingTodo.Done {
+		existingTodo.Done = true
+		existingTodo.CompletionDate = time.Now()
+	} else if pr.State == "open" && existingTodo.Done {
+		existingTodo.Done = false
+		existingTodo.CompletionDate = time.Time{}
+	}
+
+	// Update title with appropriate prefix for review requests
+	if pr.IsReview {
+		existingTodo.Description = "Review: " + pr.Title
+	} else {
+		existingTodo.Description = pr.Title
+	}
+
+	// Extract repo name from PR if not already set
+	if _, exists := existingTodo.Labels["repo"]; !exists {
+		repoName := pr.RepoOwner + "/" + pr.RepoName
+		if repoName != "" {
+			existingTodo.Labels["repo"] = repoName
+		}
+	}
 }
 
 func CompleteIssueFromTodo(todoDir string, todoItem *todo.Todo) error {
@@ -264,7 +366,14 @@ func SyncCompletedTodos(todoDir string) error {
 
 	for _, t := range todos {
 		if t.Done {
-			if reconstructGitHubURL(t) != "" {
+			githubURL := reconstructGitHubURL(t)
+			if githubURL != "" {
+				// Skip PRs - we don't want to close them based on local todo state
+				if _, hasPR := t.Labels["pr"]; hasPR {
+					continue
+				}
+
+				// Only sync completed issues
 				if syncedLabel, syncExists := t.Labels["synced"]; !syncExists || syncedLabel != "true" {
 					err := CompleteIssueFromTodo(todoDir, t)
 					if err != nil {
