@@ -211,14 +211,17 @@ func updateExistingTodo(existingTodo *todo.Todo, issue IssueWithStatus) {
 		existingTodo.Done = false
 		existingTodo.CompletionDate = time.Time{}
 	}
-	
+
 	existingTodo.Description = issue.Title
-	
+
 	if strings.EqualFold(issue.GitHubStatus, "In Progress") {
 		existingTodo.Priority = "A"
 	} else {
 		existingTodo.Priority = ""
 	}
+
+	// Update URL
+	existingTodo.Labels["url"] = issue.URL
 
 	// Extract repo name from URL if not already set
 	if _, exists := existingTodo.Labels["repo"]; !exists {
@@ -247,6 +250,7 @@ func createTodoFromIssue(issue IssueWithStatus) *todo.Todo {
 	t.Labels = map[string]string{
 		"repo":  repoName,
 		"issue": strconv.Itoa(issue.Number),
+		"url":   issue.URL,
 	}
 
 	t.Projects = []string{"github"}
