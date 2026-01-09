@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -92,8 +93,9 @@ func FromString(line string) *Todo {
 		line = strings.Replace(line, match[0], "", -1)
 	}
 
-	// Match key-value pairs (e.g., due:2025-03-01)
-	reKeyValue := regexp.MustCompile(`(\w+):([\w\-\/]+)`)
+	// Match key-value pairs (e.g., due:2025-03-01, url:https://...)
+	// Use \S+ (non-whitespace) to capture the full value including URLs
+	reKeyValue := regexp.MustCompile(`(\w+):(\S+)`)
 	keyValueMatches := reKeyValue.FindAllStringSubmatch(line, -1)
 	todo.Labels = make(map[string]string)
 	for _, match := range keyValueMatches {
@@ -145,8 +147,15 @@ func (todo *Todo) String() string {
 	}
 
 	// Add extra key-value pairs (e.g., due:2025-03-01)
-	for key, value := range todo.Labels {
-		sb.WriteString(" " + key + ":" + value)
+	// Sort keys for consistent ordering
+	keys := make([]string, 0, len(todo.Labels))
+	for key := range todo.Labels {
+		keys = append(keys, key)
+	}
+	// Sort with priority order: repo, issue, pr, url, then alphabetical for the rest
+	sortLabels(keys)
+	for _, key := range keys {
+		sb.WriteString(" " + key + ":" + todo.Labels[key])
 	}
 
 	return sb.String()
@@ -267,4 +276,40 @@ func DoneTodoPath(dir string) string {
 func getXChar(s string, chars int) string {
 	min_chars := min(len(s), chars)
 	return s[:min_chars]
+}
+
+// sortLabels sorts label keys with a priority order for GitHub-related labels
+func sortLabels(keys []string) {
+	sort.Slice(keys, func(i, j int) bool {
+		// Priority order: repo, issue, pr, url
+		priority := map[string]int{
+			"repo":  1,
+			"issue": 2,
+			"pr":    2, // issue and pr have same priority (mutually exclusive)
+			"url":   3,
+		}
+
+		pi, oki := priority[keys[i]]
+		pj, okj := priority[keys[j]]
+
+		// If both have priority, sort by priority
+		if oki && okj {
+			if pi != pj {
+				return pi < pj
+			}
+			// If same priority, sort alphabetically
+			return keys[i] < keys[j]
+		}
+
+		// If only one has priority, it comes first
+		if oki {
+			return true
+		}
+		if okj {
+			return false
+		}
+
+		// Neither has priority, sort alphabetically
+		return keys[i] < keys[j]
+	})
 }

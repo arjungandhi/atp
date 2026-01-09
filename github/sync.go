@@ -220,6 +220,9 @@ func updateExistingTodo(existingTodo *todo.Todo, issue IssueWithStatus) {
 		existingTodo.Priority = ""
 	}
 
+	// Ensure github project tag is present
+	existingTodo.Projects = []string{"github"}
+
 	// Update URL
 	existingTodo.Labels["url"] = issue.URL
 
@@ -326,6 +329,9 @@ func updateExistingTodoFromPR(existingTodo *todo.Todo, pr PullRequestInfo) {
 	} else {
 		existingTodo.Description = pr.Title
 	}
+
+	// Ensure github project tag is present
+	existingTodo.Projects = []string{"github"}
 
 	// Update URL
 	existingTodo.Labels["url"] = pr.URL
