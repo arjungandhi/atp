@@ -177,11 +177,14 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 		}
 	}
 
-	// Preserve all unprocessed GitHub todos (done, closed, or moved out of filtered statuses)
-	// This prevents data loss when issues/PRs are removed from the API response
+	// Mark unprocessed GitHub todos as done (closed, merged, or moved out of filtered statuses)
 	for url, t := range existingGitHubTodos {
 		if !processedGitHubURLs[url] {
-			fmt.Printf("Preserving unprocessed GitHub todo: %s\n", t.Description)
+			if !t.Done {
+				fmt.Printf("Marking unprocessed GitHub todo as done: %s\n", t.Description)
+				t.Done = true
+				t.CompletionDate = time.Now()
+			}
 			newTodos = append(newTodos, t)
 		}
 	}
@@ -287,6 +290,18 @@ func extractRepoFromURL(url string) string {
 }
 
 func reconstructGitHubURL(todoItem *todo.Todo) string {
+	// Only process todos with +github project tag
+	hasGitHubProject := false
+	for _, project := range todoItem.Projects {
+		if project == "github" {
+			hasGitHubProject = true
+			break
+		}
+	}
+	if !hasGitHubProject {
+		return ""
+	}
+
 	repo, hasRepo := todoItem.Labels["repo"]
 
 	// Check for issue
