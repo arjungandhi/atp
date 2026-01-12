@@ -112,18 +112,14 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 	}
 
 	existingGitHubTodos := buildGitHubTodoMap(todos)
+	processedGitHubURLs := make(map[string]bool) // Track processed URLs to avoid duplicates
 	newTodos := filterNonGitHubTodos(todos)
-
-	// Preserve done GitHub todos (they won't be in the API response)
-	for _, t := range todos {
-		if t.Done && reconstructGitHubURL(t) != "" {
-			newTodos = append(newTodos, t)
-		}
-	}
 
 	// Process issues
 	for _, issue := range issues {
 		fmt.Printf("Processing issue: %s (%s)\n", issue.Title, issue.GitHubStatus)
+		processedGitHubURLs[issue.URL] = true
+
 		if existingTodo, exists := existingGitHubTodos[issue.URL]; exists {
 			fmt.Printf("  Updating existing todo\n")
 			if hasGitHubUpdates {
@@ -151,6 +147,8 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 	for _, pr := range userPRs {
 		prURL := pr.URL
 		fmt.Printf("Processing PR: %s\n", pr.Title)
+		processedGitHubURLs[prURL] = true
+
 		if existingTodo, exists := existingGitHubTodos[prURL]; exists {
 			fmt.Printf("  Updating existing PR todo (accepting GitHub state)\n")
 			updateExistingTodoFromPR(existingTodo, pr)
@@ -166,6 +164,8 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 	for _, pr := range reviewRequests {
 		prURL := pr.URL
 		fmt.Printf("Processing review request: %s\n", pr.Title)
+		processedGitHubURLs[prURL] = true
+
 		if existingTodo, exists := existingGitHubTodos[prURL]; exists {
 			fmt.Printf("  Updating existing review request todo (accepting GitHub state)\n")
 			updateExistingTodoFromPR(existingTodo, pr)
@@ -174,6 +174,15 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 			fmt.Printf("  Creating new review request todo\n")
 			newTodo := createTodoFromPR(pr)
 			newTodos = append(newTodos, newTodo)
+		}
+	}
+
+	// Preserve all unprocessed GitHub todos (done, closed, or moved out of filtered statuses)
+	// This prevents data loss when issues/PRs are removed from the API response
+	for url, t := range existingGitHubTodos {
+		if !processedGitHubURLs[url] {
+			fmt.Printf("Preserving unprocessed GitHub todo: %s\n", t.Description)
+			newTodos = append(newTodos, t)
 		}
 	}
 
