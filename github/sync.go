@@ -114,6 +114,13 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 	existingGitHubTodos := buildGitHubTodoMap(todos)
 	newTodos := filterNonGitHubTodos(todos)
 
+	// Preserve done GitHub todos (they won't be in the API response)
+	for _, t := range todos {
+		if t.Done && reconstructGitHubURL(t) != "" {
+			newTodos = append(newTodos, t)
+		}
+	}
+
 	// Process issues
 	for _, issue := range issues {
 		fmt.Printf("Processing issue: %s (%s)\n", issue.Title, issue.GitHubStatus)

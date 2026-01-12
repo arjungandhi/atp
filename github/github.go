@@ -630,6 +630,23 @@ func (c *Client) GetUserPullRequests() ([]PullRequestInfo, error) {
 	return allPRs, nil
 }
 
+// isStillRequestedReviewer checks if the current user is still in the requested reviewers list for a PR
+func (c *Client) isStillRequestedReviewer(owner, repo string, prNumber int) (bool, error) {
+	pr, _, err := c.restClient.PullRequests.Get(c.ctx, owner, repo, prNumber)
+	if err != nil {
+		return false, fmt.Errorf("failed to get PR details: %w", err)
+	}
+
+	// Check if current user is in the requested reviewers list
+	for _, reviewer := range pr.RequestedReviewers {
+		if reviewer.GetLogin() == c.currentUser {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // GetReviewRequests fetches open pull requests where the current user is requested to review
 func (c *Client) GetReviewRequests() ([]PullRequestInfo, error) {
 	var allPRs []PullRequestInfo
@@ -654,7 +671,22 @@ func (c *Client) GetReviewRequests() ([]PullRequestInfo, error) {
 				fmt.Printf("Warning: failed to convert issue to PR: %v\n", err)
 				continue
 			}
-			allPRs = append(allPRs, pr)
+
+			// Check if user is still a requested reviewer (they might have already reviewed)
+			stillRequested, err := c.isStillRequestedReviewer(pr.RepoOwner, pr.RepoName, pr.Number)
+			if err != nil {
+				fmt.Printf("Warning: failed to check reviewer status for PR #%d: %v\n", pr.Number, err)
+				// On error, include the PR to be safe (don't silently drop it)
+				allPRs = append(allPRs, pr)
+				continue
+			}
+
+			// Only include PRs where the user is still a requested reviewer
+			if stillRequested {
+				allPRs = append(allPRs, pr)
+			} else {
+				fmt.Printf("Skipping PR #%d - user has already submitted a review\n", pr.Number)
+			}
 		}
 
 		if resp.NextPage == 0 {
