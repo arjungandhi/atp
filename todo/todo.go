@@ -2,6 +2,7 @@ package todo
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -182,31 +183,64 @@ func LoadTodoFile(path string) ([]*Todo, error) {
 
 // Write a todo.txt file from a list of todos
 func WriteTodoFile(path string, todos []*Todo) error {
-	// if the file exists, back it up to a .bak file
-	if _, err := os.Stat(path); err == nil {
-		err := os.Rename(path, path+".bak")
-		if err != nil {
-			return err
+	// Create temp file in same directory to ensure atomic rename
+	dir := filepath.Dir(path)
+	tempFile, err := os.CreateTemp(dir, ".todo-*.tmp")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tempPath := tempFile.Name()
+	defer os.Remove(tempPath) // Clean up temp file if we fail
+
+	// Write all todos to temp file
+	writer := bufio.NewWriter(tempFile)
+	for _, todo := range todos {
+		if _, err := writer.WriteString(todo.String()); err != nil {
+			tempFile.Close()
+			return fmt.Errorf("failed to write todo: %w", err)
+		}
+		if _, err := writer.WriteString("\n"); err != nil {
+			tempFile.Close()
+			return fmt.Errorf("failed to write newline: %w", err)
 		}
 	}
 
-	file, err := os.Create(path)
-	if err != nil {
-		// if there was an error, restore the backup
-		if _, err := os.Stat(path + ".bak"); err == nil {
+	// Flush buffer to file
+	if err := writer.Flush(); err != nil {
+		tempFile.Close()
+		return fmt.Errorf("failed to flush buffer: %w", err)
+	}
+
+	// Sync to ensure data is written to disk
+	if err := tempFile.Sync(); err != nil {
+		tempFile.Close()
+		return fmt.Errorf("failed to sync file: %w", err)
+	}
+
+	// Close temp file before rename
+	if err := tempFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+
+	// Create backup if original file exists
+	if _, err := os.Stat(path); err == nil {
+		backupPath := path + ".bak"
+		// Remove old backup if it exists
+		os.Remove(backupPath)
+		// Rename current file to backup
+		if err := os.Rename(path, backupPath); err != nil {
+			return fmt.Errorf("failed to create backup: %w", err)
+		}
+	}
+
+	// Atomic rename of temp file to target path
+	if err := os.Rename(tempPath, path); err != nil {
+		// Try to restore backup on failure
+		if _, statErr := os.Stat(path + ".bak"); statErr == nil {
 			os.Rename(path+".bak", path)
 		}
-		return err
+		return fmt.Errorf("failed to rename temp file: %w", err)
 	}
-	defer file.Close()
-
-	writer := bufio.NewWriter(file)
-
-	for _, todo := range todos {
-		writer.WriteString(todo.String())
-		writer.WriteString("\n")
-	}
-	writer.Flush()
 
 	return nil
 }

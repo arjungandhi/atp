@@ -72,6 +72,52 @@ access it.
 Define a storage location for your ATP data. This can be a directory or
 a file. The default is `~/.atp` but can be overridden with the '$ATP_DIR' env var
 
+### GitHub Integration
+
+ATP can sync with GitHub Projects. Configuration is stored in `$ATP_DIR/config.toml` (defaults to `~/.atp/config.toml`).
+
+#### Example Configuration
+
+```toml
+[github]
+timeout = 30
+
+[[github.projects]]
+name = "my-project"
+organization = "my-org"
+project_number = 44
+status_filters = ["Planned-This-Week", "In Progress"]
+
+[[github.projects]]
+name = "another-project"
+organization = "another-org"
+project_number = 10
+status_filters = ["In Progress"]
+```
+
+#### Usage
+
+```bash
+# Sync all configured GitHub projects
+atp todo github sync
+
+# Sync a specific project
+atp todo github sync my-project
+```
+
+#### Authentication
+
+GitHub sync supports two authentication methods (checked in order):
+
+1. **Environment Variable**: `export GITHUB_TOKEN=your_token_here`
+2. **Netrc File**: Add to `~/.netrc`:
+   ```
+   machine github.com
+   login your_username
+   password your_personal_access_token
+   ```
+
+Required GitHub token scopes: `repo`, `project`
 
 ## Design Doc
 

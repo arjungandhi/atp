@@ -72,15 +72,8 @@ func SaveConfig(atpDir string, config *Config) error {
 func getDefaultConfig() *Config {
 	return &Config{
 		GitHub: GitHubConfig{
-			Timeout: 30,
-			Projects: []GitHubProject{
-				{
-					Name:          "pattern",
-					Organization:  "Pattern-Labs",
-					ProjectNumber: 44,
-					StatusFilters: []string{"Planned-This-Week", "In Progress"},
-				},
-			},
+			Timeout:  30,
+			Projects: []GitHubProject{},
 		},
 		Repos: ReposConfig{
 			Directory:    "",

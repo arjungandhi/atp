@@ -18,6 +18,21 @@ func AtpDir() (string, error) {
 		atp_dir = "~/.atp"
 	}
 
+	// Expand ~ to home directory
+	if strings.HasPrefix(atp_dir, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get home directory: %w", err)
+		}
+		atp_dir = filepath.Join(home, atp_dir[2:])
+	} else if atp_dir == "~" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get home directory: %w", err)
+		}
+		atp_dir = home
+	}
+
 	atp_dir, err := filepath.Abs(atp_dir)
 	if err != nil {
 		return "", err

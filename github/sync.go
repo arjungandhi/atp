@@ -302,16 +302,10 @@ func reconstructGitHubURL(todoItem *todo.Todo) string {
 		return ""
 	}
 
-	repo, hasRepo := todoItem.Labels["repo"]
-
-	// Check for issue
-	if issue, hasIssue := todoItem.Labels["issue"]; hasIssue && hasRepo {
-		return fmt.Sprintf("https://github.com/%s/issues/%s", repo, issue)
-	}
-
-	// Check for PR
-	if pr, hasPR := todoItem.Labels["pr"]; hasPR && hasRepo {
-		return fmt.Sprintf("https://github.com/%s/pull/%s", repo, pr)
+	// Use the stored URL label if it exists
+	url, exists := todoItem.Labels["url"]
+	if exists {
+		return url
 	}
 
 	return ""
@@ -444,7 +438,6 @@ func syncPriorityChangesToGitHub(todoDir string, organization string, projectNum
 		}
 	}
 
-	// Simple priority sync for testing - just check current state
 	client, err := NewClient(organization)
 	if err != nil {
 		return fmt.Errorf("failed to create GitHub client: %w", err)
@@ -464,24 +457,16 @@ func syncPriorityChangesToGitHub(todoDir string, organization string, projectNum
 			expectedStatus = "Planned-This-Week"
 		}
 
-		// For testing, let's update the test issue with hardcoded values first
-		if strings.Contains(todo.Description, "test issue") {
-			fmt.Printf("DEBUG: Found test issue with priority='%s', expected status='%s'\n", 
-				todo.Priority, expectedStatus)
-			
-			projectItemID, err := client.lookupProjectItemID(projectNumber, githubURL)
-			if err != nil {
-				fmt.Printf("Warning: failed to lookup project item ID: %v\n", err)
-				continue
-			}
+		projectItemID, err := client.lookupProjectItemID(projectNumber, githubURL)
+		if err != nil {
+			fmt.Printf("Warning: failed to lookup project item ID for %s: %v\n", todo.Description, err)
+			continue
+		}
 
-			err = client.UpdateProjectItemStatus(projectNumber, projectItemID, expectedStatus)
-			if err != nil {
-				fmt.Printf("Warning: failed to update status: %v\n", err)
-				continue
-			}
-
-			fmt.Printf("Updated test issue status to: %s\n", expectedStatus)
+		err = client.UpdateProjectItemStatus(projectNumber, projectItemID, expectedStatus)
+		if err != nil {
+			fmt.Printf("Warning: failed to update status for %s: %v\n", todo.Description, err)
+			continue
 		}
 	}
 
