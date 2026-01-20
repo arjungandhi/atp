@@ -57,9 +57,6 @@ completion is done by the program itself.
 complete -C atp atp
 ```
 
-If you don't have bash or tab completion check use the shortcut
-commands instead.
-
 ## Embedded Documentation
 
 All documentation (like manual pages) has been embedded into the source
