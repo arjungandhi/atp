@@ -630,21 +630,26 @@ func (c *Client) GetUserPullRequests() ([]PullRequestInfo, error) {
 	return allPRs, nil
 }
 
-// isStillRequestedReviewer checks if the current user is still in the requested reviewers list for a PR
-func (c *Client) isStillRequestedReviewer(owner, repo string, prNumber int) (bool, error) {
-	pr, _, err := c.restClient.PullRequests.Get(c.ctx, owner, repo, prNumber)
+// hasUserReviewed checks if the current user has submitted an APPROVED or CHANGES_REQUESTED review
+func (c *Client) hasUserReviewed(owner, repo string, prNumber int) (bool, error) {
+	reviews, _, err := c.restClient.PullRequests.ListReviews(c.ctx, owner, repo, prNumber, nil)
 	if err != nil {
-		return false, fmt.Errorf("failed to get PR details: %w", err)
+		return false, fmt.Errorf("failed to list PR reviews: %w", err)
 	}
 
-	// Check if current user is in the requested reviewers list
-	for _, reviewer := range pr.RequestedReviewers {
-		if reviewer.GetLogin() == c.currentUser {
-			return true, nil
+	// Walk reviews in order; track the latest non-DISMISSED review state per user
+	// GitHub returns them in chronological order
+	latestState := ""
+	for _, review := range reviews {
+		if review.GetUser().GetLogin() == c.currentUser {
+			state := review.GetState()
+			if state != "DISMISSED" {
+				latestState = state
+			}
 		}
 	}
 
-	return false, nil
+	return latestState == "APPROVED" || latestState == "CHANGES_REQUESTED", nil
 }
 
 // GetReviewRequests fetches open pull requests where the current user is requested to review
@@ -672,20 +677,19 @@ func (c *Client) GetReviewRequests() ([]PullRequestInfo, error) {
 				continue
 			}
 
-			// Check if user is still a requested reviewer (they might have already reviewed)
-			stillRequested, err := c.isStillRequestedReviewer(pr.RepoOwner, pr.RepoName, pr.Number)
+			// Skip PRs where the user has already approved or requested changes
+			reviewed, err := c.hasUserReviewed(pr.RepoOwner, pr.RepoName, pr.Number)
 			if err != nil {
-				fmt.Printf("Warning: failed to check reviewer status for PR #%d: %v\n", pr.Number, err)
+				fmt.Printf("Warning: failed to check review status for PR #%d: %v\n", pr.Number, err)
 				// On error, include the PR to be safe (don't silently drop it)
 				allPRs = append(allPRs, pr)
 				continue
 			}
 
-			// Only include PRs where the user is still a requested reviewer
-			if stillRequested {
-				allPRs = append(allPRs, pr)
+			if reviewed {
+				fmt.Printf("Skipping PR #%d - user has already approved or requested changes\n", pr.Number)
 			} else {
-				fmt.Printf("Skipping PR #%d - user has already submitted a review\n", pr.Number)
+				allPRs = append(allPRs, pr)
 			}
 		}
 
