@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -11,6 +12,19 @@ import (
 	"github.com/arjungandhi/atp/config"
 	"github.com/arjungandhi/atp/todo"
 )
+
+var (
+	reTodoContexts = regexp.MustCompile(`\s*@\w+`)
+	reTodoProjects = regexp.MustCompile(`\s*\+\w+`)
+)
+
+// sanitizeIssueTitle strips todo.txt special syntax (@context, +project) from GitHub
+// issue titles to prevent accumulation in the Contexts/Projects fields on each sync.
+func sanitizeIssueTitle(title string) string {
+	title = reTodoContexts.ReplaceAllString(title, "")
+	title = reTodoProjects.ReplaceAllString(title, "")
+	return strings.TrimSpace(title)
+}
 
 func SyncGitHubProject(todoDir string, projectName string) error {
 	atpDir := filepath.Dir(todoDir)
@@ -127,7 +141,7 @@ func SyncIssues(todoDir string, organization string, projectNumber int, statusFi
 				updateExistingTodo(existingTodo, issue)
 			} else {
 				// Keep local state, only update title
-				existingTodo.Description = issue.Title
+				existingTodo.Description = sanitizeIssueTitle(issue.Title)
 				if _, exists := existingTodo.Labels["repo"]; !exists {
 					repoName := extractRepoFromURL(issue.URL)
 					if repoName != "" {
@@ -231,7 +245,7 @@ func updateExistingTodo(existingTodo *todo.Todo, issue IssueWithStatus) {
 		existingTodo.CompletionDate = time.Time{}
 	}
 
-	existingTodo.Description = issue.Title
+	existingTodo.Description = sanitizeIssueTitle(issue.Title)
 
 	if strings.EqualFold(issue.GitHubStatus, "In Progress") {
 		existingTodo.Priority = "A"
@@ -256,7 +270,7 @@ func updateExistingTodo(existingTodo *todo.Todo, issue IssueWithStatus) {
 
 func createTodoFromIssue(issue IssueWithStatus) *todo.Todo {
 	t := todo.NewTodo()
-	t.Description = issue.Title
+	t.Description = sanitizeIssueTitle(issue.Title)
 	t.Done = issue.State == "closed"
 	if t.Done {
 		t.CompletionDate = time.Now()
